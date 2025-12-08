@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SyncVeil - Dashboard</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="logo-wrap">
+    <img src="/images/logo.png" class="logo-main" alt="SyncVeil logo">
+  </div>
+</header>
+
+<main class="center">
+  <div class="glass card">
+    <h2>Your Profile</h2>
+    <div id="profile"></div>
+    <div class="button-group">
+      <button id="logout" class="btn ghost">Logout</button>
+    </div>
+  </div>
+</main>
+
+<script>
+async function load(){
+  const r = await fetch('/api/me');
+  if(!r.ok) return location.href = '/';
+  const d = await r.json();
+  const u = d.user;
+  const p = document.getElementById('profile');
+  p.innerHTML = `
+    <div><strong>Name:</strong> ${u.name || ''}</div>
+    <div><strong>Email:</strong> ${u.email || ''}</div>
+    <div><strong>Age:</strong> ${u.age || ''}</div>
+    <div><strong>Mobile:</strong> ${u.mobile || ''}</div>
+    <div><strong>Gender:</strong> ${u.gender || ''}</div>
+    <div><strong>Address:</strong> ${u.address || ''}</div>
+  `;
+}
+document.getElementById('logout').addEventListener('click', async () => {
+  await fetch('/api/logout', { method: 'POST' });
+  location.href = '/';
+});
+load();
+</script>
+</body>
+</html>

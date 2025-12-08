@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SyncVeil - Confirm Details</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="logo-wrap">
+    <img src="/images/logo.png" class="logo-main" alt="SyncVeil logo">
+  </div>
+</header>
+
+<main class="center">
+  <div class="glass card">
+    <h2>Confirm your details</h2>
+    <div id="details"></div>
+    <div class="button-group">
+      <button id="submit" class="btn">Create Account</button>
+      <a href="/register.html" class="btn ghost">Edit</a>
+    </div>
+    <div id="msg" class="message-area"></div>
+  </div>
+</main>
+
+<script>
+const pending = JSON.parse(localStorage.getItem('pendingRegistration') || '{}');
+const d = document.getElementById('details');
+
+d.innerHTML = Object.entries(pending)
+  .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
+  .join('');
+
+document.getElementById('submit').addEventListener('click', async () => {
+  const r = await fetch('/api/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(pending)
+  });
+  const j = await r.json();
+  if (j.success) {
+    localStorage.removeItem('pendingRegistration');
+    document.getElementById('msg').innerText = 'Account created successfully. You can now log in.';
+  } else {
+    document.getElementById('msg').innerText = 'Error: ' + (j.error || 'Unknown');
+  }
+});
+</script>
+</body>
+</html>
