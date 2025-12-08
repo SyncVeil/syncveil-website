@@ -1,0 +1,12 @@
+[
+  {
+    "id": "bd9345ef-6be0-4183-8ddd-fdb14ece8bd5",
+    "name": "Jonah Chawre",
+    "age": "21",
+    "email": "jonhachawre@gmail.com",
+    "mobile": "09689490943",
+    "gender": "Male",
+    "address": "Shankar Chowk Road\n343",
+    "password_hash": "$2b$10$HbtjXkClSrfUMQRuSTJO4OVkN/fU0ff5HxNdOEo2hi/LAJRnWmBGS"
+  }
+]

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SyncVeil - Register</title><link rel="stylesheet" href="/css/styles.css"></head>
+<body>
+<header class="site-header"><div class="logo-wrap"><img src="/images/logo.png" class="logo-main" alt="SyncVeil logo"></div></header>
+<main class="center">
+  <div class="glass card">
+    <h2>Create your account</h2>
+    <form id="register-form">
+      <label>Name<input name="name" required></label>
+      <label>Age<input name="age" type="number"></label>
+      <label>Email<input name="email" type="email" required></label>
+      <label>Mobile<input name="mobile"></label>
+      <label>Gender<select name="gender"><option>Male</option><option>Female</option><option>Other</option></select></label>
+      <label>Address<textarea name="address"></textarea></label>
+      <label>Password<input name="password" type="password" required></label>
+      <div class="button-group">
+        <button type="submit" class="btn">Continue</button>
+        <a href="/" class="btn ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</main>
+<script>
+document.getElementById('register-form').addEventListener('submit',e=>{
+  e.preventDefault();
+  const fd=new FormData(e.target);
+  const obj=Object.fromEntries(fd.entries());
+  localStorage.setItem('pendingRegistration',JSON.stringify(obj));
+  location.href='/confirm.html';
+});
+</script>
+</body>
+</html>
