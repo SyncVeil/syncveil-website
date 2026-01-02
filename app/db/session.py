@@ -1,61 +1,57 @@
 """
-Database Session Management
-CRITICAL: Use PostgreSQL in production, never SQLite
+Legacy SQL session management placeholder.
+
+Production deployment on Railway uses MongoDB only. SQL connections are
+intentionally disabled unless explicitly configured for non-production use.
 """
-from sqlalchemy import create_engine, event
+import os
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import NullPool
+from fastapi import HTTPException, status
 
 from app.core.config import get_settings
 
 settings = get_settings()
 
-# Configure engine based on environment
-connect_args = {}
+# Detect optional SQL usage (development only)
+database_url = os.getenv("DATABASE_URL", "").strip()
 
-# SQLite specific configuration
-if settings.DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
-    engine_kwargs = {
-        "connect_args": connect_args,
-        "echo": False,
-    }
-# Production: NullPool (no connection pooling for serverless/Railway)
-elif settings.is_production:
-    engine_kwargs = {
-        "poolclass": NullPool,
-        "echo": False,
-    }
-else:
-    # Development: Use connection pool
-    engine_kwargs = {
-        "pool_size": 10,
-        "max_overflow": 20,
-        "echo": False,
-        "pool_pre_ping": True,  # Test connections before using
-    }
+# Default: SQL disabled; SessionLocal is unbound to avoid engine creation
+engine = None
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, expire_on_commit=False)
 
-engine = create_engine(settings.DATABASE_URL, **engine_kwargs)
+if database_url and not settings.is_production:
+    from sqlalchemy import create_engine, event
+    from sqlalchemy.pool import NullPool
 
-# PostgreSQL-specific event listeners
-@event.listens_for(engine, "connect")
-def receive_connect(dbapi_conn, connection_record):
-    """Configure PostgreSQL on connection"""
-    if settings.DATABASE_URL.startswith("postgresql"):
-        cursor = dbapi_conn.cursor()
-        # Use UTC for all timestamps
-        cursor.execute("SET timezone = 'UTC'")
-        cursor.close()
+    # Minimal engine configuration for development/debugging
+    connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
+    engine_kwargs = {"connect_args": connect_args, "echo": False}
+    if not database_url.startswith("sqlite"):
+        engine_kwargs.update({
+            "poolclass": NullPool,
+            "pool_pre_ping": True,
+        })
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
-    expire_on_commit=False
-)
+    engine = create_engine(database_url, **engine_kwargs)
+
+    @event.listens_for(engine, "connect")
+    def receive_connect(dbapi_conn, connection_record):
+        """Configure PostgreSQL connections for dev convenience"""
+        if database_url.startswith("postgresql"):
+            cursor = dbapi_conn.cursor()
+            cursor.execute("SET timezone = 'UTC'")
+            cursor.close()
+
+    SessionLocal.configure(bind=engine)
+
 
 def get_db():
-    """Dependency for getting database session"""
+    """Dependency for getting database session; disabled when SQL is not configured"""
+    if engine is None:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="SQL database is disabled for this deployment.",
+        )
     db = SessionLocal()
     try:
         yield db

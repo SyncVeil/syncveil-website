@@ -5,19 +5,11 @@ CRITICAL: All endpoints must validate authentication token
 """
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
 from sqlalchemy.orm import Session
-from app.db.session import SessionLocal
+from app.db.session import get_db
 from app.core.security import verify_token
 from datetime import datetime
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def get_current_user(token: str = None, db: Session = Depends(get_db)):
