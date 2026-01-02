@@ -8,10 +8,12 @@ import string
 from datetime import datetime, timedelta
 from typing import Optional
 
+from fastapi import HTTPException, status
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 
 from app.core.config import get_settings
+from app.core.jwt import decode_access_token
 
 settings = get_settings()
 
@@ -100,6 +102,19 @@ def verify_token_hash(token: str, token_hash: str) -> bool:
     """
     import hmac
     return hmac.compare_digest(hash_token(token), token_hash)
+
+
+def verify_token(token: str) -> dict:
+    """
+    Validate an access token and return its payload or raise HTTP 401.
+    """
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+    return payload
 
 
 def is_token_expired(expires_at: datetime) -> bool:
