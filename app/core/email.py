@@ -1,12 +1,11 @@
 """
-Email Service - SendGrid Integration
-CRITICAL: Real transactional emails only, no console logs in production
+Email Service - Brevo Transactional Email API
+CRITICAL: Uses BREVO_API_KEY from environment; no keys are hardcoded
 """
 import logging
 from typing import Optional
 
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Email, To, Content
+import httpx
 
 from app.core.config import get_settings
 
@@ -15,46 +14,53 @@ logger = logging.getLogger(__name__)
 
 
 class EmailService:
-    """Production email service using SendGrid"""
-    
+    """Production email service using Brevo Transactional Email API"""
+
     def __init__(self):
-        self.client = SendGridAPIClient(settings.SENDGRID_API_KEY)
-        self.from_email = Email(settings.EMAIL_FROM, settings.EMAIL_FROM_NAME)
-    
+        self.api_key = settings.BREVO_API_KEY
+        self.sender_email = settings.SMTP_FROM
+        self.sender_name = settings.EMAIL_FROM_NAME
+        self._validate_config()
+
+    def _validate_config(self) -> None:
+        missing = []
+        if not self.api_key:
+            missing.append("BREVO_API_KEY")
+        if not self.sender_email:
+            missing.append("SMTP_FROM")
+        if missing:
+            raise RuntimeError(f"Email configuration missing: {', '.join(missing)}")
+
     def _send(self, to_email: str, subject: str, html_content: str) -> bool:
-        """
-        Send email via SendGrid.
-        Returns True if sent successfully, False otherwise.
-        NEVER fails silently in production.
-        """
+        payload = {
+            "sender": {"email": self.sender_email, "name": self.sender_name},
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "htmlContent": html_content,
+        }
+
+        headers = {
+            "api-key": self.api_key,
+            "accept": "application/json",
+            "content-type": "application/json",
+        }
+
         try:
-            message = Mail(
-                from_email=self.from_email,
-                to_emails=To(to_email),
-                subject=subject,
-                html_content=Content("text/html", html_content)
-            )
-            
-            response = self.client.send(message)
-            
-            if response.status_code >= 200 and response.status_code < 300:
+            with httpx.Client(timeout=10) as client:
+                response = client.post("https://api.brevo.com/v3/smtp/email", json=payload, headers=headers)
+            if 200 <= response.status_code < 300:
                 logger.info(f"Email sent successfully to {to_email}: {subject}")
                 return True
-            else:
-                logger.error(f"Failed to send email to {to_email}. Status: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            logger.error(f"Email sending error to {to_email}: {str(e)}")
-            if settings.is_production:
-                # In production, we should alert ops team about email failures
-                raise
-            return False
-    
-    def send_verification_email(self, to_email: str, verification_token: str) -> bool:
-        """Send email verification link"""
-        verification_url = f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
-        
+            logger.error(f"Brevo send failure to {to_email}: status={response.status_code}, body={response.text[:200]}")
+            raise RuntimeError("Email sending failed")
+        except Exception as exc:
+            # Do not log secrets; only the exception message
+            logger.error(f"Email send error to {to_email}: {exc}")
+            raise
+
+    def send_verification_email(self, to_email: str, otp_code: str) -> bool:
+        """Send email verification OTP with a short-lived numeric code"""
+        verification_url = f"{settings.FRONTEND_URL}/verify-email?token={otp_code}"
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -63,20 +69,20 @@ class EmailService:
                 <h1 style="color: white; margin: 0;">🛡️ SyncVeil</h1>
             </div>
             <div style="background: white; padding: 40px; border: 1px solid #e2e8f0;">
-                <h2>Welcome to SyncVeil!</h2>
-                <p>Please verify your email address to activate your account.</p>
+                <h2>Verify your email</h2>
+                <p>Use the one-time code below to verify your account.</p>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="{verification_url}" style="background: #667eea; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold;">Verify Email</a>
+                    <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #667eea;">{otp_code}</span>
                 </div>
-                <p style="color: #718096; font-size: 14px;">Link: {verification_url}</p>
-                <p style="color: #a0aec0; font-size: 12px;">Expires in {settings.EMAIL_VERIFICATION_EXPIRE_HOURS} hours.</p>
+                <p style="color: #e53e3e; font-size: 14px;">This code expires in {settings.OTP_EXPIRE_MINUTES} minutes.</p>
+                <p style="color: #718096; font-size: 14px;">You can also verify by opening this link: {verification_url}</p>
+                <p style="color: #a0aec0; font-size: 12px;">Never share this code. If you didn't request it, ignore this email.</p>
             </div>
         </body>
         </html>
         """
-        
         return self._send(to_email, "Verify your SyncVeil account", html_content)
-    
+
     def send_otp_email(self, to_email: str, otp_code: str) -> bool:
         """Send OTP code for login verification"""
         html_content = f"""
@@ -92,15 +98,14 @@ class EmailService:
                 <div style="text-align: center; margin: 30px 0;">
                     <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #667eea;">{otp_code}</span>
                 </div>
-                <p style="color: #e53e3e; font-size: 14px;">⚠️ This code expires in {settings.OTP_EXPIRE_MINUTES} minutes.</p>
+                <p style="color: #e53e3e; font-size: 14px;">This code expires in {settings.OTP_EXPIRE_MINUTES} minutes.</p>
                 <p style="color: #a0aec0; font-size: 12px;">Never share this code with anyone.</p>
             </div>
         </body>
         </html>
         """
-        
         return self._send(to_email, f"Your SyncVeil login code: {otp_code}", html_content)
-    
+
     def send_new_device_alert(self, to_email: str, device_info: str, ip_address: str) -> bool:
         """Send alert for new device login"""
         html_content = f"""
@@ -122,9 +127,8 @@ class EmailService:
         </body>
         </html>
         """
-        
         return self._send(to_email, "🔔 New device login", html_content)
-    
+
     def send_password_change_alert(self, to_email: str) -> bool:
         """Send alert after password change"""
         html_content = f"""
@@ -142,7 +146,6 @@ class EmailService:
         </body>
         </html>
         """
-        
         return self._send(to_email, "Password changed", html_content)
 
 

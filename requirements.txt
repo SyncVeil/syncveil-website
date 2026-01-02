@@ -18,15 +18,13 @@ python-multipart==0.0.19
 argon2-cffi==23.1.0  # Secure password hashing
 pyotp==2.9.0  # OTP generation
 
-# Email
-sendgrid==6.11.0
-
 # Rate Limiting
 slowapi==0.1.9
 
 # Utilities
 python-dotenv==1.0.0
 redis==5.0.1  # For session storage and rate limiting
+certifi  # SSL certificate validation for MongoDB Atlas
 
 # Development
 pytest==7.4.3

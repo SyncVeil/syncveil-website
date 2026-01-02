@@ -1,17 +1,21 @@
 import os
-import uuid
 from datetime import datetime, timedelta
+from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth.models import EmailVerificationToken, RefreshToken, User
+from app.auth.models import RefreshToken, User
+from app.core.config import get_settings
+from app.core.email import get_email_service
 from app.core.jwt import create_access_token, create_refresh_token
-from app.core.security import hash_password, hash_token, verify_password
+from app.core.security import generate_otp, hash_password, hash_token, verify_password
+from app.db.mongodb import get_sync_mongodb
 
-AUTO_VERIFY_EMAIL = os.getenv("AUTO_VERIFY_EMAIL", "true").lower() == "true"
-VERIFICATION_EXPIRY_HOURS = int(os.getenv("VERIFICATION_TOKEN_EXPIRE_HOURS", "24"))
+settings = get_settings()
 REFRESH_EXPIRES_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "14"))
+OTP_COLLECTION = "email_otps"
+OTP_PURPOSE_EMAIL = "email_verification"
 
 
 def _serialize_user(user: User) -> dict:
@@ -28,8 +32,9 @@ def _issue_tokens(db: Session, user: User) -> dict:
     refresh_token = create_refresh_token(str(user.id), {"email": user.email})
     token_record = RefreshToken(
         user_id=user.id,
-        token_hash=hash_token(refresh_token),
+        refresh_token_hash=hash_token(refresh_token),
         expires_at=datetime.utcnow() + timedelta(days=REFRESH_EXPIRES_DAYS),
+        last_used_at=datetime.utcnow(),
     )
     db.add(token_record)
     db.commit()
@@ -45,46 +50,53 @@ def register_user(db: Session, email: str, password: str) -> dict:
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
-    user = User(email=email.lower(), password_hash=hash_password(password), email_verified=AUTO_VERIFY_EMAIL)
+    user = User(email=email.lower(), password_hash=hash_password(password), email_verified=False)
     db.add(user)
     db.commit()
     db.refresh(user)
 
-    verification_token = None
-    if not AUTO_VERIFY_EMAIL:
-        verification_token = EmailVerificationToken(
-            user_id=user.id,
-            token=str(uuid.uuid4()),
-            expires_at=datetime.utcnow() + timedelta(hours=VERIFICATION_EXPIRY_HOURS),
-        )
-        db.add(verification_token)
-        db.commit()
+    otp_code = _create_email_verification_otp(user)
+    _send_verification_email(user.email, otp_code)
 
-    tokens = _issue_tokens(db, user)
     return {
         "user": _serialize_user(user),
-        **tokens,
-        "verification_token": verification_token.token if verification_token else None,
+        "verification_token": None,
     }
 
 
 def verify_email(db: Session, token: str) -> dict:
-    record = db.query(EmailVerificationToken).filter(EmailVerificationToken.token == token).first()
-    if not record:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verification token not found")
-    
-    if record.expires_at < datetime.utcnow():
-        db.delete(record)
-        db.commit()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Verification token expired")
+    otp_code = token.strip()
+    if not otp_code.isdigit() or len(otp_code) != settings.OTP_LENGTH:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OTP code")
 
-    user = db.query(User).filter(User.id == record.user_id).first()
+    collection = _get_otp_collection()
+    otp_hash = hash_token(otp_code)
+    record = collection.find_one({"otp_hash": otp_hash, "purpose": OTP_PURPOSE_EMAIL})
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid or expired OTP")
+
+    now = datetime.utcnow()
+    if record.get("used"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP already used")
+    if record.get("expires_at") and record["expires_at"] <= now:
+        collection.update_one({"_id": record["_id"]}, {"$set": {"used": True, "used_at": now}})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP expired")
+
+    try:
+        user_id = UUID(str(record.get("user_id")))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OTP record")
+
+    user = db.query(User).filter(User.id == user_id).first()
     if not user:
+        collection.update_one({"_id": record["_id"]}, {"$set": {"used": True, "used_at": now}})
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     user.email_verified = True
-    db.delete(record)
+    user.email_verified_at = now
     db.commit()
+
+    collection.update_one({"_id": record["_id"]}, {"$set": {"used": True, "used_at": now}})
     return _serialize_user(user)
 
 
@@ -92,8 +104,50 @@ def login_user(db: Session, email: str, password: str) -> dict:
     user = db.query(User).filter(User.email == email.lower()).first()
     if not user or not verify_password(password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-    if not user.email_verified and not AUTO_VERIFY_EMAIL:
+    if not user.email_verified:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified")
 
     tokens = _issue_tokens(db, user)
     return {"user": _serialize_user(user), **tokens}
+
+
+def _get_otp_collection():
+    try:
+        db = get_sync_mongodb()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"OTP storage unavailable: {exc}")
+    return db[OTP_COLLECTION]
+
+
+def _create_email_verification_otp(user: User) -> str:
+    collection = _get_otp_collection()
+    otp_code = generate_otp(settings.OTP_LENGTH)
+    otp_hash = hash_token(otp_code)
+    expires_at = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+
+    # Remove any existing unused OTPs for this user/purpose
+    collection.delete_many({"user_id": str(user.id), "purpose": OTP_PURPOSE_EMAIL, "used": False})
+
+    collection.insert_one(
+        {
+            "user_id": str(user.id),
+            "email": user.email,
+            "purpose": OTP_PURPOSE_EMAIL,
+            "otp_hash": otp_hash,
+            "expires_at": expires_at,
+            "created_at": datetime.utcnow(),
+            "used": False,
+            "used_at": None,
+            "attempts": 0,
+        }
+    )
+
+    return otp_code
+
+
+def _send_verification_email(email: str, otp_code: str) -> None:
+    email_service = get_email_service()
+    try:
+        email_service.send_verification_email(email, otp_code)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to send verification email") from exc

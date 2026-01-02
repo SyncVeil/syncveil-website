@@ -1,219 +1,225 @@
-# 🛡️ **SyncVeil**
+# 🛡️ SyncVeil
 
-### *Privacy Reinvented. Security Simplified.*
+**Privacy-First Security Platform** — Modern authentication, encrypted data storage, and user-centric privacy tools.
 
-Welcome to **SyncVeil** — where your digital identity isn’t just protected…
-It’s *shielded*, *encrypted*, and *wrapped in a cloak of pure technological sorcery* 🪄✨
-
-SyncVeil is built for people who want **control** over their personal data, **clarity** in how it’s used, and **confidence** in every digital interaction.
-No noise. No nonsense. Just clean, powerful privacy.
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template)
 
 ---
 
-## 🌍 **What We Stand For**
+## 🚀 Quick Start
 
-At SyncVeil, we believe privacy should be:
+### Production Deployment (Railway)
 
-### ✔️ *Simple*
+1. **Fork this repository**
+2. **Deploy to Railway**
+   - Connect your GitHub repository
+   - Railway auto-detects Python and uses `Procfile`
+3. **Set Environment Variables** (see [Configuration](#configuration))
+4. **Deploy!**
 
-You shouldn’t need a PhD in cybersecurity to protect your information.
+View your app at: `https://your-app.railway.app`
 
-### ✔️ *Transparent*
-
-No dark patterns. No fine-print trickery. Just straight-forward protection.
-
-### ✔️ *Universal*
-
-Whether you're a casual user or a tech enthusiast, your privacy belongs to you — not to companies, not to algorithms, not to trackers.
-
-### ✔️ *Beautifully Designed*
-
-Privacy doesn’t have to be boring. We bring aesthetic clarity, smooth UI/UX, and modern design into the world of digital protection.
-
----
-
-## 🔐 **What SyncVeil Does**
-
-> Think of SyncVeil as your personal **digital bodyguard** — silent, smart, and always alert.
-
-### 🔸 **Identity Safety**
-
-Keep your personal details safe from leaks, misuse, and unauthorized access.
-
-### 🔸 **Secure Data Sync**
-
-Your data travels with a shield. Every sync is protected by strong security layers.
-
-### 🔸 **User-Centric Privacy Tools**
-
-Tools built around *you*, not your data.
-
-### 🔸 **Clean, Modern Experience**
-
-Glass effects, smooth transitions, dark theme, and a futuristic aesthetic — privacy has never looked this good.
-
----
-
-## 🚀 **Our Mission**
-
-> **To make digital privacy effortless, elegant, and accessible to everyone — without compromising on power.**
-
-We want a world where your data moves only when *you* say so.
-Where privacy doesn’t feel like a chore.
-Where protection is built into your everyday digital life.
-
----
-
-## 🧩 **Core Values**
-
-### 🕵️ Absolute Privacy
-
-We don’t sell your data. We don’t spy. We don’t track.
-Your information is yours — full stop.
-
-### 🛠️ Engineering Excellence
-
-Clean code, scalable systems, secure-by-design architecture.
-
-### 🎨 Human-Centered Design
-
-Tech shouldn’t feel robotic. SyncVeil is smooth, expressive, and easy to fall in love with.
-
-### 🌱 Continuous Growth
-
-We're building for the long-term, evolving with every user and every challenge.
-
----
-
-## 🧭 **Roadmap (Sneak Peek 👀)**
-
-* 🔧 **Advanced Privacy Dashboard** — full control from one panel
-* 🌫️ **Encrypted Sync Engine 2.0** — faster, smarter, stronger
-* 📱 **Cross-Platform Apps** — privacy on mobile and desktop
-* 🤖 **AI-Powered Threat Alerts** — stay ahead of risks
-* 🌐 **End-to-End Encrypted Cloud** — your vault, your rules
-
-SyncVeil is constantly evolving — and yes, it's going to get *very* exciting. 😎
-
----
-
-## 🤝 **Our Promise to You**
-
-We don't just protect data —
-we protect **trust**.
-
-Our products are built with transparency, engineering discipline, and a user-first mindset.
-Every feature is designed to empower you, not exploit you.
-
-If privacy is your superpower,
-**SyncVeil is your suit.**
-
----
-## 🚀 **Backend Setup & Development**
-
-### Project Structure
-
-```
-.
-├── app/                    # FastAPI backend
-│   ├── auth/              # Authentication module
-│   ├── core/              # Core utilities (JWT, security)
-│   ├── db/                # Database configuration
-│   └── main.py            # FastAPI application entry point
-├── *.html                 # Frontend HTML pages
-└── requirements.txt       # Python dependencies
-```
-
-### Installation
-
-1. **Install Python Dependencies**
+### Local Development
 
 ```bash
+# Clone repository
+git clone https://github.com/SyncVeil/syncveil-website.git
+cd syncveil-website
+
 # Create virtual environment
 python -m venv .venv
-
-# Activate virtual environment
-source .venv/bin/activate  # Linux/Mac
-# or
-.venv\Scripts\activate     # Windows
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
-```
 
-2. **Configure Environment**
-
-```bash
-# Copy example environment file
+# Copy environment template
 cp .env.example .env
+# Edit .env with your settings
 
-# Edit .env with your configuration
-# At minimum, set JWT_SECRET to a secure random string
-```
-
-3. **Start Backend Server**
-
-```bash
-# Using the startup script
+# Start development server
+chmod +x start_backend.sh
 ./start_backend.sh
-
-# Or manually
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Backend: `http://localhost:8000`  
-API Docs: `http://localhost:8000/docs`
+Server runs at: `http://localhost:8000`
 
-4. **Serve Frontend**
+---
+
+## 📋 Configuration
+
+### Required Environment Variables
 
 ```bash
-# Using Python's built-in server
-python -m http.server 5500
+# Environment
+ENVIRONMENT=production
 
-# Or use VS Code Live Server extension
+# Database (PostgreSQL for production)
+DATABASE_URL=postgresql://user:pass@host:5432/dbname
+
+# JWT Authentication
+JWT_SECRET=<generate-strong-random-key>
+JWT_ALGORITHM=HS256
+
+# Email Service (Brevo Transactional Email API)
+BREVO_API_KEY=<your-brevo-api-key>
+SMTP_FROM=<verified-sender@example.com>
+EMAIL_FROM=noreply@yourdomain.com
+
+# CORS
+CORS_ORIGINS=https://yourdomain.com
+
+# Frontend URL
+FRONTEND_URL=https://yourdomain.com
 ```
 
-### API Endpoints
+### Optional Environment Variables
 
+```bash
+# MongoDB Atlas (NoSQL features)
+MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/?retryWrites=true&w=majority
+MONGO_DB_NAME=syncveil
+
+# Redis (Session/Rate limiting)
+REDIS_URL=redis://default:password@host:6379
+```
+
+See [.env.example](.env.example) for complete configuration options.
+
+---
+
+## 🏗️ Architecture
+
+```
+SyncVeil
+├── FastAPI Backend (Python)
+│   ├── JWT Authentication
+│   ├── PostgreSQL (User data)
+│   ├── MongoDB Atlas (NoSQL features)
+│   ├── Redis (Sessions/Rate limiting)
+│   └── Brevo (Email)
+├── Static Frontend (HTML/CSS/JS)
+│   └── Served by FastAPI
+└── Railway Deployment
+    ├── Automatic HTTPS
+    ├── Environment variables
+    └── Procfile configuration
+```
+
+### Tech Stack
+
+- **Backend**: FastAPI, SQLAlchemy, Motor (MongoDB)
+- **Database**: PostgreSQL, MongoDB Atlas
+- **Cache**: Redis
+- **Auth**: JWT, Argon2 password hashing
+- **Email**: Brevo (Transactional API)
+- **Deployment**: Railway
+
+---
+
+## 📚 API Documentation
+
+Once deployed, visit:
+- **Interactive Docs**: `https://your-app.railway.app/docs`
+- **Alternative Docs**: `https://your-app.railway.app/redoc`
+- **Health Check**: `https://your-app.railway.app/health`
+
+### Key Endpoints
+
+- `POST /auth/signup` - Create new account
+- `POST /auth/login` - User login
+- `POST /auth/refresh` - Refresh access token
 - `GET /health` - Health check
-- `POST /auth/signup` - Register new user
-- `POST /auth/login` - Authenticate user  
-- `GET /auth/verify?token=<token>` - Verify email
-
-### Environment Variables
-
-See `.env.example` for all configuration options:
-- `DATABASE_URL` - Database connection (default: SQLite)
-- `JWT_SECRET` - Secret key for JWT tokens
-- `AUTO_VERIFY_EMAIL` - Skip email verification (dev)
-- `CORS_ORIGINS` - Allowed frontend origins
-
-### Security Notes
-
-⚠️ **For production deployment:**
-1. Set a strong `JWT_SECRET`
-2. Use PostgreSQL instead of SQLite
-3. Configure SMTP for email verification
-4. Set proper CORS origins
-5. Use HTTPS/TLS
-
----
-## 💬 **Join the SyncVeil Journey**
-
-Whether you're here as a user, a collaborator, or someone curious about privacy — welcome aboard.
-Let’s build a safer digital future, one shield at a time. ⚔️
+- `GET /api/mongodb/*` - MongoDB operations (if enabled)
 
 ---
 
-## 📧 **Contact Us**
+## 🗂️ Project Structure
 
-Need help, want to contribute, or just want to say hi?
-
-**Email:** [customercare@syncveil.software](mailto:customercare@syncveil.software)
-**Website:** [https://syncveil.software/](https://syncveil.software/)
+```
+syncveil-website/
+├── app/
+│   ├── auth/           # Authentication logic
+│   ├── core/           # Configuration, security, JWT
+│   ├── db/             # Database connections
+│   └── mongodb/        # MongoDB routes & models
+├── migrations/         # Database migrations
+├── *.html              # Frontend pages
+├── Procfile           # Railway deployment config
+├── requirements.txt   # Python dependencies
+├── .env.example       # Environment template
+└── start_backend.sh   # Local development script
+```
 
 ---
 
-### ⭐ *If you like what we’re building, don’t forget to star the repo and support the mission!*
+## 🔒 Security Features
 
-Privacy deserves attention — let’s make it mainstream. 🚀
+- ✅ Argon2 password hashing
+- ✅ JWT-based authentication
+- ✅ Rate limiting on auth endpoints
+- ✅ CORS configuration
+- ✅ Environment-based secrets
+- ✅ No hardcoded credentials
+- ✅ SSL/TLS for all connections
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run backend tests
+python test_backend.py
+
+# Test specific endpoint
+curl https://your-app.railway.app/health
+```
+
+---
+
+## 📖 Documentation
+
+- [Railway Deployment Guide](RAILWAY_DEPLOYMENT.md)
+- [MongoDB Atlas Setup](MONGODB_ATLAS_SETUP.md)
+- [MongoDB API Documentation](MONGODB_API.md)
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
+
+---
+
+## 🆘 Support
+
+- **Issues**: [GitHub Issues](https://github.com/SyncVeil/syncveil-website/issues)
+- **Documentation**: See documentation files
+- **Email**: support@syncveil.com
+
+---
+
+## 🎯 Roadmap
+
+- [ ] Two-factor authentication (2FA)
+- [ ] OAuth integrations (Google, GitHub)
+- [ ] Account recovery flow
+- [ ] Admin dashboard
+- [ ] API rate limiting dashboard
+- [ ] WebSocket support for real-time features
+
+---
+
+**Built with ❤️ by the SyncVeil Team**
+
+*Privacy Reinvented. Security Simplified.*

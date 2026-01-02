@@ -13,27 +13,27 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
     # Environment
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     
     # Database
-    DATABASE_URL: str
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./syncveil_dev.db")
     
-    # MongoDB
-    MONGODB_URL: str = "mongodb://localhost:27017"
-    MONGODB_DB_NAME: str = "syncveil"
+    # MongoDB Atlas (NoSQL)
+    MONGO_URI: str = os.getenv("MONGO_URI", "")  # Must be mongodb+srv:// connection string
+    MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "syncveil")
     
     # JWT
-    JWT_SECRET: str
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "dev-secret-key-change-in-production")
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     
     # Redis
-    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     
-    # Email (SendGrid)
-    SENDGRID_API_KEY: str
-    EMAIL_FROM: str
+    # Email (Brevo Transactional API)
+    BREVO_API_KEY: str = os.getenv("BREVO_API_KEY", "")
+    SMTP_FROM: str = os.getenv("SMTP_FROM", "")
     EMAIL_FROM_NAME: str = "SyncVeil"
     
     # OTP
@@ -56,17 +56,17 @@ class Settings(BaseSettings):
     RATE_LIMIT_SIGNUP: str = "2/minute"
     
     # CORS
-    CORS_ORIGINS: str = "http://localhost:5500"
+    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
     
     # Admin
-    INITIAL_ADMIN_EMAIL: str = "admin@syncveil.com"
+    INITIAL_ADMIN_EMAIL: str = os.getenv("INITIAL_ADMIN_EMAIL", "admin@syncveil.com")
     
     # Logging
-    LOG_LEVEL: str = "INFO"
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FILE: str = "logs/syncveil.log"
     
     # Frontend
-    FRONTEND_URL: str = "http://localhost:5500"
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5500")
     
     @property
     def is_production(self) -> bool:
@@ -93,9 +93,11 @@ class Settings(BaseSettings):
         if "sqlite" in self.DATABASE_URL.lower():
             errors.append("SQLite is not allowed in production, use PostgreSQL")
         
-        # Check email is configured
-        if not self.SENDGRID_API_KEY or "YOUR" in self.SENDGRID_API_KEY:
-            errors.append("SENDGRID_API_KEY must be configured in production")
+        # Check Brevo email is configured
+        if not self.BREVO_API_KEY:
+            errors.append("BREVO_API_KEY must be configured in production")
+        if not self.SMTP_FROM:
+            errors.append("SMTP_FROM must be configured in production")
         
         # Check HTTPS frontend
         if not self.FRONTEND_URL.startswith("https://"):
