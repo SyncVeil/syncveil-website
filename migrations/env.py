@@ -7,14 +7,15 @@ import os
 
 # Import our models
 from app.db.base import Base
-from app.core.config import get_settings
 
 config = context.config
-settings = get_settings()
 
-# Configure database URL from environment
-if not config.get_main_option("sqlalchemy.url"):
-    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Configure database URL from environment (used only when running legacy SQL migrations)
+database_url = os.getenv("DATABASE_URL", "").strip()
+if not database_url:
+    raise RuntimeError("DATABASE_URL is not set. SQL migrations are disabled for MongoDB-only deployments.")
+
+config.set_main_option("sqlalchemy.url", database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

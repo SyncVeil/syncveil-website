@@ -8,6 +8,7 @@ from typing import Optional
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo import MongoClient
+from fastapi import HTTPException, status
 
 from app.core.config import get_settings
 
@@ -143,8 +144,11 @@ def get_mongodb() -> AsyncIOMotorDatabase:
     Raises RuntimeError if MongoDB is not connected
     """
     if mongodb.db is None:
-        raise RuntimeError(
-            "MongoDB is not initialized. Please ensure MONGO_URI environment variable is set "
-            "and the application has successfully connected to MongoDB Atlas."
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "MongoDB is not initialized. Please ensure MONGO_URI is set and the app "
+                "has connected to MongoDB Atlas."
+            ),
         )
     return mongodb.db

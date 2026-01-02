@@ -13,23 +13,20 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
     # Environment
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
-    
-    # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./syncveil_dev.db")
+    ENV: str = os.getenv("ENV", "development")
     
     # MongoDB Atlas (NoSQL)
     MONGO_URI: str = os.getenv("MONGO_URI", "")  # Must be mongodb+srv:// connection string
-    MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "syncveil")
+    MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "")
     
     # JWT
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "dev-secret-key-change-in-production")
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "")
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     
     # Redis
-    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    REDIS_URL: str = os.getenv("REDIS_URL", "")
     
     # Email (Brevo Transactional API)
     BREVO_API_KEY: str = os.getenv("BREVO_API_KEY", "")
@@ -66,12 +63,12 @@ class Settings(BaseSettings):
     LOG_FILE: str = "logs/syncveil.log"
     
     # Frontend
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5500")
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "")
     
     @property
     def is_production(self) -> bool:
         """Check if running in production"""
-        return self.ENVIRONMENT.lower() == "production"
+        return self.ENV.lower() == "production"
     
     @property
     def cors_origins_list(self) -> List[str]:
@@ -85,30 +82,40 @@ class Settings(BaseSettings):
         
         errors = []
         
-        # Check JWT secret is not default
-        if "dev-secret" in self.JWT_SECRET.lower() or len(self.JWT_SECRET) < 32:
-            errors.append("JWT_SECRET must be a strong random key in production")
+        # Required production environment variables
+        required_env = {
+            "MONGO_URI": self.MONGO_URI,
+            "MONGO_DB_NAME": self.MONGO_DB_NAME,
+            "JWT_SECRET": self.JWT_SECRET,
+            "BREVO_API_KEY": self.BREVO_API_KEY,
+            "SMTP_FROM": self.SMTP_FROM,
+        }
         
-        # Check database is not SQLite
-        if "sqlite" in self.DATABASE_URL.lower():
-            errors.append("SQLite is not allowed in production, use PostgreSQL")
+        missing = [name for name, value in required_env.items() if not value]
+        if missing:
+            errors.append(
+                f"Missing required environment variables: {', '.join(missing)}\n"
+                f"Production requires: ENV=production, MONGO_URI, MONGO_DB_NAME, "
+                f"JWT_SECRET, BREVO_API_KEY, SMTP_FROM"
+            )
         
-        # Check Brevo email is configured
-        if not self.BREVO_API_KEY:
-            errors.append("BREVO_API_KEY must be configured in production")
-        if not self.SMTP_FROM:
-            errors.append("SMTP_FROM must be configured in production")
+        # Additional validation for non-empty values
+        if self.JWT_SECRET and len(self.JWT_SECRET) < 32:
+            errors.append("JWT_SECRET must be at least 32 characters in production")
         
-        # Check HTTPS frontend
-        if not self.FRONTEND_URL.startswith("https://"):
-            errors.append("FRONTEND_URL must use HTTPS in production")
+        if self.MONGO_URI and not (self.MONGO_URI.startswith("mongodb://") or self.MONGO_URI.startswith("mongodb+srv://")):
+            errors.append("MONGO_URI must be a valid MongoDB connection string (mongodb:// or mongodb+srv://)")
         
         if errors:
-            raise ValueError(f"Production validation failed:\n" + "\n".join(f"- {e}" for e in errors))
+            raise ValueError(
+                f"❌ Production validation failed:\n" + 
+                "\n".join(f"   • {e}" for e in errors)
+            )
     
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # Ignore extra fields from .env for backwards compatibility
 
 
 @lru_cache()
