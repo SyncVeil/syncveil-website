@@ -3,6 +3,8 @@
 **Privacy-First Security Platform** — Modern authentication, encrypted data storage, and user-centric privacy tools.
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/SyncVeil/syncveil-website)
+[![Open in vscode.dev](https://img.shields.io/badge/Open%20in-vscode.dev-blue?logo=visualstudiocode)](https://vscode.dev/github/SyncVeil/syncveil-website/tree/main)
 
 ---
 
