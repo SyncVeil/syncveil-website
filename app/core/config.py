@@ -1,7 +1,12 @@
 """
 Core configuration module - Environment-based settings
-CRITICAL: Never expose secrets or allow hardcoded values in production
+
+RULES:
+- No secrets hardcoded
+- Production must fail fast if critical config is missing
+- Development must NEVER crash due to missing external services
 """
+
 from functools import lru_cache
 from typing import List
 
@@ -12,6 +17,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
 
+    # ======================
+    # Pydantic Settings
+    # ======================
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,
@@ -24,7 +32,7 @@ class Settings(BaseSettings):
     ENV: str = Field(default="development", env="ENV")
 
     # ======================
-    # MongoDB
+    # Database (MongoDB)
     # ======================
     MONGO_URI: str = Field(default="", env="MONGO_URI")
     MONGO_DB_NAME: str = Field(default="", env="MONGO_DB_NAME")
@@ -38,13 +46,14 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
     # ======================
-    # Redis (optional)
+    # Redis (Optional)
     # ======================
     REDIS_URL: str = Field(default="", env="REDIS_URL")
 
     # ======================
     # Email (Brevo)
     # ======================
+    EMAIL_ENABLED: bool = False
     BREVO_API_KEY: str = Field(default="", env="BREVO_API_KEY")
     SMTP_FROM: str = Field(default="", env="SMTP_FROM")
     EMAIL_FROM_NAME: str = "SyncVeil"
@@ -59,11 +68,11 @@ class Settings(BaseSettings):
     # ======================
     # Email Verification
     # ======================
-    EMAIL_VERIFICATION_EXPIRE_HOURS: int = 24
     EMAIL_VERIFICATION_REQUIRED: bool = False
+    EMAIL_VERIFICATION_EXPIRE_HOURS: int = 24
 
     # ======================
-    # Security - Argon2
+    # Password Hashing (Argon2)
     # ======================
     PASSWORD_HASH_TIME_COST: int = 2
     PASSWORD_HASH_MEMORY_COST: int = 65536
@@ -118,25 +127,28 @@ class Settings(BaseSettings):
             return ["*"]
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
+    # ======================
+    # Production Validation
+    # ======================
     def validate_production_settings(self) -> None:
-        """Validate critical settings for production only"""
+        """
+        Production MUST fail fast.
+        Development MUST NOT crash.
+        """
         if not self.is_production:
             return
 
-        errors = []
+        errors: list[str] = []
 
-        required = {
-            "MONGO_URI": self.MONGO_URI,
-            "MONGO_DB_NAME": self.MONGO_DB_NAME,
-            "JWT_SECRET": self.JWT_SECRET,
-            "BREVO_API_KEY": self.BREVO_API_KEY,
-            "SMTP_FROM": self.SMTP_FROM,
-        }
+        # Core required settings
+        if not self.MONGO_URI:
+            errors.append("MONGO_URI is required")
+        if not self.MONGO_DB_NAME:
+            errors.append("MONGO_DB_NAME is required")
+        if not self.JWT_SECRET:
+            errors.append("JWT_SECRET is required")
 
-        missing = [key for key, value in required.items() if not value]
-        if missing:
-            errors.append("Missing required environment variables: " + ", ".join(missing))
-
+        # Security checks
         if self.JWT_SECRET and len(self.JWT_SECRET) < 32:
             errors.append("JWT_SECRET must be at least 32 characters")
 
@@ -146,13 +158,25 @@ class Settings(BaseSettings):
         ):
             errors.append("MONGO_URI must be a valid MongoDB connection string")
 
+        # Email only enforced if enabled
+        if self.EMAIL_ENABLED:
+            if not self.BREVO_API_KEY:
+                errors.append("BREVO_API_KEY is required when EMAIL_ENABLED=true")
+            if not self.SMTP_FROM:
+                errors.append("SMTP_FROM is required when EMAIL_ENABLED=true")
+
         if errors:
-            raise ValueError("❌ Production configuration invalid:\n" + "\n".join(f"- {e}" for e in errors))
+            raise ValueError(
+                "❌ Production configuration invalid:\n"
+                + "\n".join(f"- {e}" for e in errors)
+            )
 
 
+# ======================
+# Settings Loader
+# ======================
 @lru_cache()
 def get_settings() -> Settings:
     settings = Settings()
-    if settings.is_production:
-        settings.validate_production_settings()
+    settings.validate_production_settings()
     return settings
