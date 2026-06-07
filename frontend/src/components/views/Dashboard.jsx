@@ -710,7 +710,6 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser, oaut
   const [intelTab,setIntelTab]    = useState('breaches');
   const [drag,setDrag]            = useState(false);
   const [sidebarOpen,setSidebarOpen] = useState(false);
-  const [sidebarOpen,setSidebarOpen] = useState(false);
   const [vaultStats,setVaultStats] = useState(null);
   const [checkingId,setCheckingId] = useState(null);
   // ── 2FA state ──
