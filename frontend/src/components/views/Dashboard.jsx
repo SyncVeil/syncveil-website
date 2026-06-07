@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Activity, AlertTriangle, CheckCircle, Clock, Download, Eye, Globe, Link, Lock, LogOut, Mail, Moon, RefreshCw, Settings, Shield, Smartphone, Sun, Trash2, Upload, User, Wifi, X } from 'lucide-react';
-import { dashboardAPI } from '../../api';
+import { dashboardAPI, passkeyAPI } from '../../api';
 import '../../adminator.css';
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -9,7 +9,8 @@ const ago    = iso => { if(!iso) return 'never'; const s=(Date.now()-new Date(is
 const fmtDate = iso => iso ? new Date(iso).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}) : '—';
 const initials = name => name ? name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) : '??';
 const severityTag = s => { const m={critical:'danger',high:'warning',medium:'info',low:'success'}; return m[s]||'muted'; };
-const eventDot = t => { if(!t) return ''; const l=t.toLowerCase(); if(l.includes('fail')||l.includes('block')) return 'danger'; if(l.includes('warn')) return 'warning'; if(l.includes('success')||l.includes('login')) return 'success'; return 'info'; };
+const eventDot = t => { if(!t) return ''; const l=t.toLowerCase(); if(l.includes('fail')||l.includes('block')||l.includes('bad_cred')||l.includes('disabled')) return 'danger'; if(l.includes('warn')||l.includes('cooldown')) return 'warning'; if(l.includes('success')||l.includes('verified')||l.includes('login')) return 'success'; return 'info'; };
+const evLabel = ev => { const r=ev.reason||ev.event_type||''; const m={'bad_credentials':'Failed login','otp_challenge_sent':'Sign-in code sent','otp_verified':'Login success','2fa_required':'2FA required','2fa_verified':'2FA verified','2fa_invalid':'2FA failed','cooldown':'Rate limited','disabled':'Account disabled','email_not_verified':'Email not verified','password_reset':'Password reset','logout':'Signed out','logout_all':'All devices signed out'}; return m[r]||r||'Security event'; };
 
 // ── Radial Ring ───────────────────────────────────────────────────────────────
 const Radial = ({ pct=0, color='primary', label, caption }) => {
@@ -142,7 +143,7 @@ function IntelFeedTab() {
               <span>Showing <strong style={{color:'var(--t-base)'}}>{items.length}</strong> entries</span>
               <span>Source: <strong style={{color:'var(--primary)'}}>URLhaus / abuse.ch</strong> — free, no API key required</span>
             </div>
-            <table className="table">
+            <div className="table-scroll"><table className="table">
               <thead>
                 <tr>
                   <th style={{width:'40%'}}>URL</th>
@@ -190,7 +191,7 @@ function IntelFeedTab() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </>
         )}
       </section>
@@ -406,7 +407,7 @@ function AlertEngine({ showToast, logEvent }) {
 function SecurityScoreEngine({ twofa, breaches, events, sessions, vault, vaultStats, sec, onNavigate }) {
 
   // ── Factor definitions & scoring ─────────────────────────────────────────
-  const failedLogins = events.filter(e => e.event_type?.toLowerCase().includes('fail')).length;
+  const failedLogins = events.filter(e => (e.reason||e.event_type||'').toLowerCase().match(/fail|bad_cred|block/)).length;
   const activeSessions = sec?.active_sessions ?? sessions.length ?? 0;
 
   const factors = [
@@ -680,7 +681,7 @@ function SecurityScoreEngine({ twofa, breaches, events, sessions, vault, vaultSt
   );
 }
 
-export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
+export default function Dashboard({ onLogout, onSwitchView, user: propUser, oauthRefreshKey }) {
   const [tab,    setTab]    = useState('overview');
   const [theme,  setTheme]  = useState(() => { try { return localStorage.getItem('sv-theme')||'light'; } catch { return 'light'; } });
   const [dash,   setDash]   = useState(null);
@@ -698,12 +699,18 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
   const [profForm,setProfForm]    = useState({full_name:'',phone:'',country:'',date_of_birth:''});
   const [profSaving,setProfSaving]= useState(false);
   const [profSaved,setProfSaved]  = useState(false);
+  const [pwForm,setPwForm]        = useState({current:'',next:'',confirm:''});
+  const [pwSaving,setPwSaving]    = useState(false);
+  const [pwErr,setPwErr]          = useState('');
+  const [pwOk,setPwOk]            = useState('');
   const [connecting,setConnecting]= useState('');
   const [toast,setToast]          = useState(null);
   const [intel,setIntel]          = useState(null);
   const [intelLoading,setIntelLoading] = useState(false);
   const [intelTab,setIntelTab]    = useState('breaches');
   const [drag,setDrag]            = useState(false);
+  const [sidebarOpen,setSidebarOpen] = useState(false);
+  const [sidebarOpen,setSidebarOpen] = useState(false);
   const [vaultStats,setVaultStats] = useState(null);
   const [checkingId,setCheckingId] = useState(null);
   // ── 2FA state ──
@@ -714,6 +721,13 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
   const [twofaCode,  setTwofaCode]  = useState('');     // input code
   const [twofaErr,   setTwofaErr]   = useState('');
   const [twofaBusy,  setTwofaBusy]  = useState(false);
+  // ── Passkey state ──
+  const [passkeyStatus,   setPasskeyStatus]   = useState(null);  // {has_passkey, created_at}
+  const [passkeyStep,     setPasskeyStep]     = useState('idle'); // idle | create | delete
+  const [passkeyPin,      setPasskeyPin]      = useState('');
+  const [passkeyConfirm,  setPasskeyConfirm]  = useState('');
+  const [passkeyErr,      setPasskeyErr]      = useState('');
+  const [passkeyBusy,     setPasskeyBusy]     = useState(false);
   // ── Session management state ──
   const [sessions,      setSessions]      = useState([]);
   const [sessLoading,   setSessLoading]   = useState(false);
@@ -758,23 +772,26 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
 
   const loadAll = useCallback(async (silent=false) => {
     if(!silent) setLoading(true); else setRefreshing(true);
-    const [d,s,e,b,v,em,p,vs,tf] = await Promise.allSettled([
+    const [d,s,e,b,v,em,p,vs,tf,ca,pk] = await Promise.allSettled([
       dashboardAPI.getDashboardData(), dashboardAPI.getSecurityOverview(),
       dashboardAPI.getSecurityEvents(25), dashboardAPI.getBreachData(),
       dashboardAPI.getVaultFiles(), dashboardAPI.getEmailSecurity(), dashboardAPI.getProfile(),
       dashboardAPI.getVaultStorageStats(), dashboardAPI.get2FAStatus(),
+      dashboardAPI.getConnectedAccounts(), passkeyAPI.getStatus(),
     ]);
-    if(d.status==='fulfilled'){ const r=d.value?.data||d.value; setDash(r); setConnected(r?.connectedAccounts||[]); }
+    if(d.status==='fulfilled'){ const r=d.value?.data||d.value; setDash(r); if(r?.sessions?.length) setSessions(r.sessions); }
+    if(ca.status==='fulfilled'){ setConnected(ca.value?.accounts||[]); }
+    else if(d.status==='fulfilled'){ const r=d.value?.data||d.value; setConnected(r?.connectedAccounts||[]); }
     if(s.status==='fulfilled') setSec(s.value?.data||s.value);
     if(e.status==='fulfilled') {
       const evts = e.value?.data?.events||[];
       setEvents(evts);
       // Seed activity log from server-side security events (login success/failure)
       evts.forEach(ev => {
-        const t = ev.event_type?.toLowerCase()||'';
-        if(t.includes('login') || t.includes('auth') || t.includes('fail')) {
-          const type = (t.includes('fail')||t.includes('block')) ? 'Login Failure' : 'Login Success';
-          const detail = [ev.ip_address, ev.user_agent?.slice(0,40)].filter(Boolean).join(' · ') || '—';
+        const t = (ev.reason||ev.event_type||'').toLowerCase();
+        if(t.includes('login')||t.includes('auth')||t.includes('fail')||t.includes('verified')||t.includes('otp')||t.includes('challenge')) {
+          const type = (t.includes('fail')||t.includes('block')||t.includes('bad_cred')) ? 'Login Failure' : 'Login Success';
+          const detail = [ev.ip_address, (ev.device_info||ev.user_agent)?.slice(0,40)].filter(Boolean).join(' · ') || '—';
           logEvent(type, detail);
         }
       });
@@ -785,10 +802,13 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
     if(em.status==='fulfilled') setEmailSec(em.value);
     if(p.status==='fulfilled'){ const pr=p.value; setProfile(pr); setProfForm({full_name:pr.full_name||'',phone:pr.phone||'',country:pr.country||'',date_of_birth:pr.date_of_birth||''}); }
     if(tf.status==='fulfilled') setTwofa(tf.value);
+    if(pk.status==='fulfilled') setPasskeyStatus(pk.value);
     setLoading(false); setRefreshing(false); setLastRefreshed(new Date());
   },[]);
 
   useEffect(()=>{ loadAll(); },[loadAll]);
+  // Re-fetch connected accounts whenever App.jsx signals an OAuth just completed
+  useEffect(()=>{ if(oauthRefreshKey){ loadAll(true); } },[oauthRefreshKey]);
   useEffect(()=>{ const f=sessionStorage.getItem('oauth_connecting'); if(f){ sessionStorage.removeItem('oauth_connecting'); const t=setTimeout(()=>loadAll(true),800); return()=>clearTimeout(t); } },[]);
   useEffect(()=>{ if(tab==='monitor' && sessions.length===0) loadSessions(); },[tab]);
 
@@ -805,7 +825,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
       } catch(err){ setVault(p=>p.map(f=>f.id===tmp?{...f,status:'failed',error:err.message}:f)); setUploadErr(err.message||'Upload failed'); }
     }
   };
-  const deleteFile = async id => { if(!confirm('Delete this file?')) return; try{ await dashboardAPI.deleteVaultFile(id); setVault(p=>p.filter(f=>f.id!==id)); logEvent('File Deleted', vault.find(f=>f.id===id)?.file_name||id); showToast('File deleted.'); }catch(e){ showToast(e.message,'error'); } };
+  const deleteFile = async id => { try{ await dashboardAPI.deleteVaultFile(id); setVault(p=>p.filter(f=>f.id!==id)); logEvent('File Deleted', vault.find(f=>f.id===id)?.file_name||id); showToast('File deleted.'); }catch(e){ showToast(e.message,'error'); } };
   const downloadFile = async (id, name) => { try{ showToast('Preparing download…','info'); await dashboardAPI.downloadVaultFile(id, name); logEvent('File Downloaded', name); }catch(e){ showToast(e.message||'Download failed','error'); } };
   const checkIntegrity = async (id) => {
     setCheckingId(id);
@@ -816,7 +836,22 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
     }catch(e){ showToast(e.message||'Check failed','error'); }
     finally{ setCheckingId(null); }
   };
-  const saveProfile = async () => { setProfSaving(true); try{ await dashboardAPI.updateProfile(profForm); setProfSaved(true); logEvent('Password Changed', 'Profile / account details updated'); showToast('Profile saved.'); setTimeout(()=>setProfSaved(false),3000); }catch(e){ showToast(e.message||'Save failed.','error'); } finally{ setProfSaving(false); } };
+  const changePassword = async () => {
+    setPwErr(''); setPwOk('');
+    if(!pwForm.current){setPwErr('Enter your current password.');return;}
+    if(pwForm.next.length<8){setPwErr('New password must be at least 8 characters.');return;}
+    if(pwForm.next!==pwForm.confirm){setPwErr('Passwords do not match.');return;}
+    setPwSaving(true);
+    try{
+      await dashboardAPI.changePassword(pwForm.current,pwForm.next);
+      setPwOk('Password changed. Other devices have been signed out.');
+      setPwForm({current:'',next:'',confirm:''});
+      logEvent('Password Changed','Password updated from settings');
+      setTimeout(()=>setPwOk(''),4000);
+    }catch(e){setPwErr(e.message||'Failed to change password.');}
+    finally{setPwSaving(false);}
+  };
+  const saveProfile = async () => { setProfSaving(true); try{ await dashboardAPI.updateProfile(profForm); setProfSaved(true); logEvent('Profile Updated', 'Account details saved'); showToast('Profile saved.'); setTimeout(()=>setProfSaved(false),3000); }catch(e){ showToast(e.message||'Save failed.','error'); } finally{ setProfSaving(false); } };
 
   // ── 2FA handlers ─────────────────────────────────────────────────────────
   const twofa_begin = async () => {
@@ -873,6 +908,34 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
     finally{ setTwofaBusy(false); }
   };
 
+  // ── Passkey handlers ─────────────────────────────────────────────────────
+  const passkey_create = async () => {
+    if(passkeyPin.length < 6){ setPasskeyErr('Enter a 6-digit PIN.'); return; }
+    if(passkeyPin !== passkeyConfirm){ setPasskeyErr('PINs do not match.'); return; }
+    setPasskeyBusy(true); setPasskeyErr('');
+    try {
+      await passkeyAPI.createPasskey(passkeyPin);
+      setPasskeyStatus({ has_passkey: true, created_at: new Date().toISOString() });
+      setPasskeyStep('idle');
+      setPasskeyPin(''); setPasskeyConfirm('');
+      showToast('Passkey saved! Use this PIN to sign in on any device.');
+    } catch(e){ setPasskeyErr(e.message||'Failed to save passkey'); }
+    finally{ setPasskeyBusy(false); }
+  };
+
+  const passkey_delete = async () => {
+    if(passkeyPin.length < 6){ setPasskeyErr('Enter your current PIN to confirm deletion.'); return; }
+    setPasskeyBusy(true); setPasskeyErr('');
+    try {
+      await passkeyAPI.deletePasskey(passkeyPin);
+      setPasskeyStatus({ has_passkey: false, created_at: null });
+      setPasskeyStep('idle');
+      setPasskeyPin(''); setPasskeyConfirm('');
+      showToast('Passkey removed.');
+    } catch(e){ setPasskeyErr(e.message||'Incorrect PIN'); }
+    finally{ setPasskeyBusy(false); }
+  };
+
   // ── Session management handlers ──────────────────────────────────────────
   const loadSessions = async () => {
     setSessLoading(true);
@@ -926,7 +989,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
     catch(e){ showToast(e.message||`${provider} OAuth not configured.`,'error'); }
     finally{ setConnecting(''); }
   };
-  const disconnectProvider = async provider => { if(!confirm(`Disconnect ${provider}?`)) return; try{ await dashboardAPI.disconnectAccount(provider); setConnected(p=>p.filter(a=>a.provider!==provider)); logEvent('Account Unlinked', `${provider} account disconnected`); showToast(`${provider} disconnected.`); }catch(e){ showToast(e.message,'error'); } };
+  const disconnectProvider = async provider => { try{ await dashboardAPI.disconnectAccount(provider); setConnected(p=>p.filter(a=>a.provider!==provider)); logEvent('Account Unlinked', `${provider} account disconnected`); showToast(`${provider} disconnected.`); }catch(e){ showToast(e.message,'error'); } };
   const connAcc = p => connected.find(a=>a.provider===p);
   const score = sec?.security_score??0;
   const rl    = sec?.risk_level||'low';
@@ -953,9 +1016,11 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
         </div>
       )}
 
-      <div className="adm-shell">
+      {sidebarOpen && <div className="mob-overlay" onClick={()=>setSidebarOpen(false)}/>}
+      <div className={`adm-shell${sidebarOpen?' sidebar-open':''}`}>
         {/* ── Sidebar ── */}
         <aside className="d-sidebar">
+          <button className="mob-sidebar-close" onClick={()=>setSidebarOpen(false)} aria-label="Close menu" style={{display:"none",position:"absolute",top:14,right:14,border:"none",background:"var(--bg-hover)",borderRadius:8,padding:6,cursor:"pointer",color:"var(--t-muted)",lineHeight:0,zIndex:1}}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           <div className="brand">
             <button className="brand-logo" onClick={()=>onSwitchView?.('home')} style={{cursor:'pointer',border:'none'}}>
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -993,7 +1058,8 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
         <div className="adm-main">
           {/* Topbar */}
           <header className="d-topbar">
-            <div className="crumbs">
+            <button className="mob-hamburger icon-btn" onClick={()=>setSidebarOpen(v=>!v)} aria-label="Toggle menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+            <div className="crumbs" style={{overflow:"hidden",minWidth:0,flex:1}}>
               <span>SyncVeil</span>
               <span className="sep">/</span>
               <span className="current">{TABS.find(t=>t.id===tab)?.label||'Dashboard'}</span>
@@ -1050,7 +1116,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                     <Smartphone size={15}/>
                   </KpiCard>
                   <KpiCard label="Security Events" value={events.length} iconKind="info" pill="7 days" pillKind="info"
-                    compare={<><strong>{events.filter(e=>e.event_type?.toLowerCase().includes('fail')).length}</strong> failures detected</>}>
+                    compare={<><strong>{events.filter(e=>(e.reason||e.event_type||'').toLowerCase().match(/fail|bad_cred|block/)).length}</strong> failures detected</>}>
                     <Activity size={15}/>
                   </KpiCard>
                   <KpiCard label="2FA Status" value={twofa?.enabled?'Active':'Off'} iconKind={twofa?.enabled?'success':'warning'}
@@ -1059,6 +1125,25 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                     <Shield size={15}/>
                   </KpiCard>
                 </div>
+
+                {/* Passkey nudge banner */}
+                {passkeyStatus && !passkeyStatus.has_passkey && (
+                  <div style={{background:'linear-gradient(135deg,rgba(99,102,241,.08),rgba(99,102,241,.03))',border:'1px solid rgba(99,102,241,.25)',borderRadius:12,padding:'14px 18px',display:'flex',alignItems:'center',gap:14,marginBottom:8,flexWrap:'wrap'}}>
+                    <div style={{width:36,height:36,borderRadius:10,background:'rgba(99,102,241,.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <Lock size={16} style={{color:'var(--primary)'}}/>
+                    </div>
+                    <div style={{flex:1,minWidth:180}}>
+                      <div style={{fontWeight:600,fontSize:'.9rem',marginBottom:2}}>Speed up your sign-ins with a passkey</div>
+                      <div style={{fontSize:'.82rem',opacity:.7}}>Set a 6-digit cloud PIN once — sign in instantly on any device, no email code needed.</div>
+                    </div>
+                    <button className="btn btn--primary" style={{flexShrink:0,fontSize:13}} onClick={()=>{ setPasskeyStep('create'); setPasskeyPin(''); setPasskeyConfirm(''); setPasskeyErr(''); setTab('settings'); }}>
+                      Set up passkey
+                    </button>
+                    <button style={{background:'none',border:'none',cursor:'pointer',opacity:.5,padding:4}} onClick={()=>setPasskeyStatus(p=>({...p,_dismissed:true}))}>
+                      <X size={16}/>
+                    </button>
+                  </div>
+                )}
 
                 <div className="grid">
                   {/* Radial rings: score breakdown */}
@@ -1074,7 +1159,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                     </div>
                     <div className="sv-radials" style={{gridTemplateColumns:'repeat(2,minmax(0,1fr))'}}>
                       <Radial pct={score} color="success" label="Security score" caption="overall health"/>
-                      <Radial pct={Math.min(100,events.filter(e=>!e.event_type?.toLowerCase().includes('fail')).length*4)} color="primary" label="Auth success rate" caption="last 25 events"/>
+                      <Radial pct={Math.min(100,events.filter(e=>!(e.reason||e.event_type||'').toLowerCase().match(/fail|bad_cred|block/)).length*4)} color="primary" label="Auth success rate" caption="last 25 events"/>
                       <Radial pct={connected.length>0?100:20} color="info" label="Account linking" caption="providers connected"/>
                       <Radial pct={vault.length>0?80:0} color="warning" label="Vault usage" caption="encrypted files"/>
                     </div>
@@ -1095,10 +1180,10 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                       ? <p style={{color:'var(--t-muted)',fontSize:13,textAlign:'center',padding:'24px 0'}}>No recent events</p>
                       : events.slice(0,8).map((ev,i)=>(
                         <div key={i} className="event-row">
-                          <div className={`event-dot ${eventDot(ev.event_type)}`}/>
+                          <div className={`event-dot ${eventDot(ev.reason||ev.event_type)}`}/>
                           <div>
-                            <div className="event-text">{ev.event_type||'Security event'}</div>
-                            <div className="event-sub">{ev.ip_address||ev.user_agent?.slice(0,40)||'—'}</div>
+                            <div className="event-text">{evLabel(ev)}</div>
+                            <div className="event-sub">{ev.ip_address||(ev.device_info||ev.user_agent)?.slice(0,40)||'—'}</div>
                           </div>
                           <div className="event-time">{ago(ev.created_at||ev.timestamp)}</div>
                         </div>
@@ -1120,7 +1205,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                         <div className="provider-logo"><ProviderLogo p={p}/></div>
                         <div className="provider-info">
                           <div className="provider-name">{p.charAt(0).toUpperCase()+p.slice(1)}</div>
-                          <div className="provider-sub">{acc?acc.provider_email||'Connected':connecting===p?'Connecting…':'Not connected'}</div>
+                          <div className="provider-sub">{acc?acc.email||acc.displayName||'Connected':connecting===p?'Connecting…':'Not connected'}</div>
                         </div>
                         {acc
                           ? <button className="btn btn--soft-danger btn--sm" onClick={()=>disconnectProvider(p)}>Disconnect</button>
@@ -1149,8 +1234,8 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                         <div key={i} className="event-row">
                           <div className="event-dot danger"/>
                           <div>
-                            <div className="event-text">{b.Name||b.title||'Unknown breach'}</div>
-                            <div className="event-sub">{b.BreachDate||b.date||'Unknown date'} · {b.PwnCount?.toLocaleString?.()||'?'} records</div>
+                            <div className="event-text">{b.message||b.Name||b.title||'Security event'}</div>
+                            <div className="event-sub">{b.ip||b.BreachDate||b.date||'—'} · {ago(b.timestamp)}</div>
                           </div>
                           <span className="badge danger">Exposed</span>
                         </div>
@@ -1179,19 +1264,38 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                         <h2 className="card-title">Email security posture</h2>
                       </div>
                     </div>
+                    {emailSec && (
+                      <div className="kpi-grid" style={{marginBottom:16}}>
+                        <KpiCard label="Spam Risk" value={emailSec.spam_risk_score??0} sup="/100"
+                          iconKind={emailSec.spam_risk_level==='low'?'success':emailSec.spam_risk_level==='critical'?'danger':'warning'}
+                          pill={emailSec.spam_risk_level||'—'} pillKind={emailSec.spam_risk_level==='low'?'up':emailSec.spam_risk_level==='critical'?'down':'neutral'}
+                          compare={<>based on login activity</>}><AlertTriangle size={15}/></KpiCard>
+                        <KpiCard label="Failed Logins (7d)" value={emailSec.failed_attempts_7d??0}
+                          iconKind={emailSec.failed_attempts_7d>5?'danger':'success'}
+                          compare={<>authentication failures</>}><Activity size={15}/></KpiCard>
+                        <KpiCard label="Unique IPs (7d)" value={emailSec.unique_ips_7d??0}
+                          iconKind={emailSec.unique_ips_7d>5?'warning':'success'}
+                          compare={<>distinct source IPs</>}><Globe size={15}/></KpiCard>
+                        <KpiCard label="DNS Score" value={emailSec.dns_score??0} sup="/100"
+                          iconKind={(emailSec.dns_score??0)>=70?'success':(emailSec.dns_score??0)>=40?'warning':'danger'}
+                          compare={<>SPF + DKIM + DMARC</>}><Shield size={15}/></KpiCard>
+                      </div>
+                    )}
                     {!emailSec
                       ? <div className="adm-alert info"><Mail size={15}/><div>Email security analysis will appear here once your backend returns data.</div></div>
                       : (
                         <div className="grid" style={{marginBottom:0}}>
                           {[
-                            {label:'SPF Record',   val:emailSec.spf?.exists,   ok:emailSec.spf?.valid,   detail:emailSec.spf?.record||'—'},
-                            {label:'DKIM Record',  val:emailSec.dkim?.exists,  ok:emailSec.dkim?.valid,  detail:emailSec.dkim?.record||'—'},
-                            {label:'DMARC Record', val:emailSec.dmarc?.exists, ok:emailSec.dmarc?.valid, detail:emailSec.dmarc?.record||'—'},
+                            {label:'SPF Record',   exists:emailSec.spf?.exists,   ok:emailSec.spf?.valid,   detail:emailSec.spf?.record||'No SPF record found'},
+                            {label:'DKIM Record',  exists:emailSec.dkim?.exists,  ok:emailSec.dkim?.valid,  detail:emailSec.dkim?.record||'No DKIM record found'},
+                            {label:'DMARC Record', exists:emailSec.dmarc?.exists, ok:emailSec.dmarc?.valid, detail:emailSec.dmarc?.record||'No DMARC record found'},
                           ].map(r=>(
                             <div key={r.label} className="col-4 card" style={{boxShadow:'none',border:'1px solid var(--border-soft)'}}>
                               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
                                 <div style={{fontSize:13,fontWeight:600,color:'var(--t-base)'}}>{r.label}</div>
-                                <span className={`badge ${r.ok?'success':'danger'}`}>{r.ok?'Pass':'Fail'}</span>
+                                <span className={`badge ${r.ok?'success':r.exists?'warning':'danger'}`}>
+                                  {r.ok?'Pass':r.exists?'Invalid':'Missing'}
+                                </span>
                               </div>
                               <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:11,color:'var(--t-muted)',wordBreak:'break-all',lineHeight:1.6}}>{r.detail}</div>
                             </div>
@@ -1210,19 +1314,19 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                     {breaches.length===0
                       ? <div className="adm-alert success"><CheckCircle size={15}/><div><strong>Great news.</strong> Your email hasn't appeared in any known data breaches.</div></div>
                       : (
-                        <table className="table">
+                        <div className="table-scroll"><table className="table">
                           <thead><tr><th>Service</th><th>Date</th><th>Records exposed</th><th>Severity</th></tr></thead>
                           <tbody>
                             {breaches.map((b,i)=>(
                               <tr key={i}>
-                                <td className="cell-name">{b.Name||b.title||'Unknown'}</td>
-                                <td className="cell-muted">{b.BreachDate||b.date||'—'}</td>
+                                <td className="cell-name">{b.message||b.Name||b.title||'Security event'}</td>
+                                <td className="cell-muted">{b.ip||b.BreachDate||b.date||'—'} · {ago(b.timestamp)}</td>
                                 <td className="cell-mono">{b.PwnCount?.toLocaleString?.()||'—'}</td>
                                 <td><span className={`tag ${severityTag(b.severity)}`}>{b.severity||'Unknown'}</span></td>
                               </tr>
                             ))}
                           </tbody>
-                        </table>
+                        </table></div>
                       )
                     }
                   </section>
@@ -1243,7 +1347,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                     <button className="btn btn--primary" onClick={()=>fileRef.current?.click()}>
                       <Upload size={14}/> Upload file
                     </button>
-                    <input ref={fileRef} type="file" multiple style={{display:'none'}} onChange={e=>upload(Array.from(e.target.files||[]))}/>
+                    <input ref={fileRef} type="file" multiple style={{display:'none'}} onChange={e=>{upload(Array.from(e.target.files||[]));e.target.value='';}}/>  
                   </div>
                 </section>
 
@@ -1308,8 +1412,8 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                     </div>
                     {uploadErr && <div className="adm-alert danger" style={{marginBottom:16}}><AlertTriangle size={15}/>{uploadErr}</div>}
                     <div className={`dropzone${drag?' active':''}`}
-                      onDragOver={e=>{e.preventDefault();setDrag(true);}}
-                      onDragLeave={()=>setDrag(false)}
+                      onDragOver={e=>{e.preventDefault();e.stopPropagation();setDrag(true);}}
+                      onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setDrag(false);}}
                       onDrop={e=>{e.preventDefault();setDrag(false);upload(Array.from(e.dataTransfer.files));}}
                       onClick={()=>fileRef.current?.click()}>
                       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
@@ -1389,10 +1493,10 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                       ? <p style={{color:'var(--t-muted)',fontSize:13,textAlign:'center',padding:'24px 0'}}>No events recorded.</p>
                       : events.map((ev,i)=>(
                         <div key={i} className="event-row">
-                          <div className={`event-dot ${eventDot(ev.event_type)}`}/>
+                          <div className={`event-dot ${eventDot(ev.reason||ev.event_type)}`}/>
                           <div>
-                            <div className="event-text">{ev.event_type||'Security event'}</div>
-                            <div className="event-sub">{[ev.ip_address,ev.user_agent?.slice(0,30)].filter(Boolean).join(' · ')||'—'}</div>
+                            <div className="event-text">{evLabel(ev)}</div>
+                            <div className="event-sub">{[ev.ip_address,(ev.device_info||ev.user_agent)?.slice(0,30)].filter(Boolean).join(' · ')||'—'}</div>
                           </div>
                           <div className="event-time">{ago(ev.created_at||ev.timestamp)}</div>
                         </div>
@@ -1413,8 +1517,8 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                         <div key={i} className="event-row">
                           <div className="event-dot danger"/>
                           <div>
-                            <div className="event-text">{b.Name||b.title||'Unknown breach'}</div>
-                            <div className="event-sub">{b.BreachDate||b.date||'—'} · {b.Description?.slice?.(0,60)||'Data exposed'}</div>
+                            <div className="event-text">{b.message||b.Name||b.title||'Security event'}</div>
+                            <div className="event-sub">{b.ip||b.BreachDate||b.date||'—'} · {b.Description?.slice?.(0,60)||ago(b.timestamp)}</div>
                           </div>
                           <span className={`tag ${severityTag(b.severity)}`}>{b.severity||'—'}</span>
                         </div>
@@ -1662,7 +1766,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                             : intel.hibp.count===0
                               ? <div className="adm-alert success"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div><strong>Not found in any breaches.</strong> Your email does not appear in HIBP's database of {(3e9).toLocaleString()}+ compromised accounts.</div></div>
                               : (
-                                <table className="table">
+                                <div className="table-scroll"><table className="table">
                                   <thead><tr><th>Service</th><th>Date</th><th>Records</th><th>Severity</th></tr></thead>
                                   <tbody>
                                     {intel.hibp.breaches.map((b,i)=>(
@@ -1674,7 +1778,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                                       </tr>
                                     ))}
                                   </tbody>
-                                </table>
+                                </table></div>
                               )
                           }
                         </section>
@@ -1699,7 +1803,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                             : !intel.leakcheck.found
                               ? <div className="adm-alert success"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div><strong>Not found in dark-web leaks.</strong> Your credentials were not found in LeakCheck's database.</div></div>
                               : (
-                                <table className="table">
+                                <div className="table-scroll"><table className="table">
                                   <thead><tr><th>Source</th><th>Date</th><th>Entries</th><th>Fields exposed</th></tr></thead>
                                   <tbody>
                                     {intel.leakcheck.sources.map((s,i)=>(
@@ -1711,7 +1815,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                                       </tr>
                                     ))}
                                   </tbody>
-                                </table>
+                                </table></div>
                               )
                           }
                         </section>
@@ -1787,7 +1891,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                             : !intel.ip_reputation[0]?.available
                               ? <div className="adm-alert warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg><div><strong>ABUSEIPDB_API_KEY not set.</strong> Get a free key at <span style={{fontFamily:'JetBrains Mono,monospace',fontSize:11}}>abuseipdb.com/register</span></div></div>
                               : (
-                                <table className="table">
+                                <div className="table-scroll"><table className="table">
                                   <thead><tr><th>IP Address</th><th>Country / ISP</th><th>Abuse Score</th><th>Reports</th><th>Status</th></tr></thead>
                                   <tbody>
                                     {intel.ip_reputation.map((ip,i)=>(
@@ -1805,7 +1909,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                                       </tr>
                                     ))}
                                   </tbody>
-                                </table>
+                                </table></div>
                               )
                           }
                         </section>
@@ -1863,6 +1967,69 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                         {profSaving?'Saving…':profSaved?'Saved ✓':'Save changes'}
                       </button>
                     </div>
+
+                    <div className="sv-divider" style={{margin:'20px 0'}}/>
+                    <div className="card-head" style={{border:0,padding:'0 0 12px',margin:0}}>
+                      <div className="card-title-wrap">
+                        <span className="eyebrow">Security</span>
+                        <h2 className="card-title" style={{fontSize:16}}>Change password</h2>
+                      </div>
+                    </div>
+                    <div className="form-grid">
+                      <div className="field" style={{gridColumn:'1/-1'}}>
+                        <label className="field-label">Current password</label>
+                        <input className="input" type="password" value={pwForm.current} onChange={e=>setPwForm(p=>({...p,current:e.target.value}))} placeholder="••••••••" autoComplete="current-password"/>
+                      </div>
+                      <div className="field">
+                        <label className="field-label">New password</label>
+                        <input className="input" type="password" value={pwForm.next} onChange={e=>setPwForm(p=>({...p,next:e.target.value}))} placeholder="At least 8 characters" autoComplete="new-password"/>
+                      </div>
+                      <div className="field">
+                        <label className="field-label">Confirm new password</label>
+                        <input className="input" type="password" value={pwForm.confirm} onChange={e=>setPwForm(p=>({...p,confirm:e.target.value}))} placeholder="Repeat new password" autoComplete="new-password"/>
+                      </div>
+                    </div>
+                    {pwErr && <div className="adm-alert danger" style={{marginTop:8}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>{pwErr}</span></div>}
+                    {pwOk && <div className="adm-alert success" style={{marginTop:8}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>{pwOk}</span></div>}
+                    <div className="form-actions">
+                      <button className="btn btn--primary" onClick={changePassword} disabled={pwSaving||!pwForm.current||!pwForm.next||!pwForm.confirm}>
+                        {pwSaving?'Changing…':'Change password'}
+                      </button>
+                    </div>
+                  </section>
+
+                  {/* ── Connected Accounts in Settings ── */}
+                  <section className="col-8 card">
+                    <div className="card-head">
+                      <div className="card-title-wrap">
+                        <span className="eyebrow">Integrations</span>
+                        <h2 className="card-title">Connected accounts</h2>
+                      </div>
+                      <button className="btn btn--ghost btn--sm" onClick={()=>dashboardAPI.getConnectedAccounts().then(r=>setConnected(r?.accounts||[])).catch(()=>{})} title="Refresh">
+                        <RefreshCw size={13}/> Refresh
+                      </button>
+                    </div>
+                    <p style={{marginBottom:16,opacity:.75,fontSize:'.9rem',lineHeight:1.6}}>
+                      Link your Google or Microsoft account to enhance your security monitoring and enable single sign-on.
+                    </p>
+                    {['google','microsoft'].map(p=>{
+                      const acc=connAcc(p); return (
+                      <div key={p} className="provider-row" style={{marginBottom:12}}>
+                        <div className="provider-logo"><ProviderLogo p={p}/></div>
+                        <div className="provider-info">
+                          <div className="provider-name">{p.charAt(0).toUpperCase()+p.slice(1)}</div>
+                          <div className="provider-sub">
+                            {acc ? (acc.email||acc.display_name||acc.displayName||'Connected') : (connecting===p?'Connecting…':'Not connected')}
+                          </div>
+                        </div>
+                        {acc
+                          ? <button className="btn btn--soft-danger btn--sm" onClick={()=>disconnectProvider(p)}>Disconnect</button>
+                          : <button className="btn btn--soft-primary btn--sm" onClick={()=>connectProvider(p)} disabled={!!connecting}>
+                              {connecting===p?'…':'Connect'}
+                            </button>
+                        }
+                      </div>
+                    );})}
                   </section>
 
                   <section className="col-4 card">
@@ -2067,6 +2234,142 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                       </div>
                     )}
                   </section>
+
+                  {/* ── Passkey Card ── */}
+                  <section className="col-12 card">
+                    <div className="card-head">
+                      <div className="card-title-wrap">
+                        <span className="eyebrow">Security</span>
+                        <h2 className="card-title">Cloud Passkey (6-digit PIN)</h2>
+                      </div>
+                      {passkeyStatus?.has_passkey && passkeyStep==='idle' && (
+                        <span className="badge badge--success" style={{alignSelf:'center'}}>
+                          <CheckCircle size={12} style={{marginRight:4}}/>Active
+                        </span>
+                      )}
+                      {!passkeyStatus?.has_passkey && passkeyStep==='idle' && (
+                        <span className="badge badge--warning" style={{alignSelf:'center'}}>Not set</span>
+                      )}
+                    </div>
+
+                    {passkeyStep==='idle' && !passkeyStatus?.has_passkey && (
+                      <div>
+                        <p style={{marginBottom:16,opacity:.75,fontSize:'.9rem',lineHeight:1.6}}>
+                          Set a 6-digit passkey PIN stored securely in the cloud. Next time you sign in, use your PIN instead of waiting for an email code — works on <strong>every device</strong>, no setup needed.
+                        </p>
+                        {passkeyErr && <div className="alert alert--danger" style={{marginBottom:12}}>{passkeyErr}</div>}
+                        <button className="btn btn--primary" onClick={()=>{ setPasskeyStep('create'); setPasskeyPin(''); setPasskeyConfirm(''); setPasskeyErr(''); }}>
+                          <Lock size={14}/> Set up passkey
+                        </button>
+                      </div>
+                    )}
+
+                    {passkeyStep==='idle' && passkeyStatus?.has_passkey && (
+                      <div>
+                        <p style={{marginBottom:16,opacity:.75,fontSize:'.9rem',lineHeight:1.6}}>
+                          Your passkey PIN is active. Sign in instantly on any device — no email code needed.
+                          {passkeyStatus.created_at && <><br/><span style={{fontSize:'.82rem',opacity:.6}}>Set on {new Date(passkeyStatus.created_at).toLocaleDateString()}</span></>}
+                        </p>
+                        <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                          <button className="btn btn--ghost" onClick={()=>{ setPasskeyStep('create'); setPasskeyPin(''); setPasskeyConfirm(''); setPasskeyErr(''); }}>
+                            <RefreshCw size={14}/> Change PIN
+                          </button>
+                          <button className="btn btn--ghost" style={{color:'var(--danger)',borderColor:'var(--danger)'}} onClick={()=>{ setPasskeyStep('delete'); setPasskeyPin(''); setPasskeyErr(''); }}>
+                            <Trash2 size={14}/> Remove passkey
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {passkeyStep==='create' && (
+                      <div>
+                        <p style={{marginBottom:16,fontSize:'.9rem',opacity:.75}}>Choose a 6-digit PIN. It will be encrypted and saved to the cloud — same PIN works on all your devices.</p>
+                        <div style={{marginBottom:14}}>
+                          <label className="field-label" style={{display:'block',marginBottom:6}}>New PIN</label>
+                          <div style={{display:'flex',gap:8}}>
+                            {[0,1,2,3,4,5].map(i=>(
+                              <input key={i} id={`pk-new-${i}`} type="text" inputMode="numeric" maxLength={1}
+                                value={passkeyPin[i]||''}
+                                autoFocus={i===0}
+                                onChange={e=>{
+                                  const ch=e.target.value.replace(/\D/g,'').slice(-1);
+                                  const arr=(passkeyPin+'      ').slice(0,6).split(''); arr[i]=ch;
+                                  setPasskeyPin(arr.join('').trimEnd()); setPasskeyErr('');
+                                  if(ch&&i<5) setTimeout(()=>document.getElementById(`pk-new-${i+1}`)?.focus(),0);
+                                }}
+                                onKeyDown={e=>{ if(e.key==='Backspace'&&!passkeyPin[i]&&i>0){ const arr=(passkeyPin+'      ').slice(0,6).split(''); arr[i-1]=''; setPasskeyPin(arr.join('').trimEnd()); setTimeout(()=>document.getElementById(`pk-new-${i-1}`)?.focus(),0); }}}
+                                style={{width:44,height:52,textAlign:'center',fontSize:20,fontWeight:700,border:passkeyPin[i]?'2px solid var(--primary)':'2px solid var(--border)',borderRadius:10,background:'var(--surface)',color:'var(--text)',caretColor:'transparent',outline:'none'}}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <div style={{marginBottom:16}}>
+                          <label className="field-label" style={{display:'block',marginBottom:6}}>Confirm PIN</label>
+                          <div style={{display:'flex',gap:8}}>
+                            {[0,1,2,3,4,5].map(i=>(
+                              <input key={i} id={`pk-conf-${i}`} type="text" inputMode="numeric" maxLength={1}
+                                value={passkeyConfirm[i]||''}
+                                onChange={e=>{
+                                  const ch=e.target.value.replace(/\D/g,'').slice(-1);
+                                  const arr=(passkeyConfirm+'      ').slice(0,6).split(''); arr[i]=ch;
+                                  setPasskeyConfirm(arr.join('').trimEnd()); setPasskeyErr('');
+                                  if(ch&&i<5) setTimeout(()=>document.getElementById(`pk-conf-${i+1}`)?.focus(),0);
+                                }}
+                                onKeyDown={e=>{ if(e.key==='Backspace'&&!passkeyConfirm[i]&&i>0){ const arr=(passkeyConfirm+'      ').slice(0,6).split(''); arr[i-1]=''; setPasskeyConfirm(arr.join('').trimEnd()); setTimeout(()=>document.getElementById(`pk-conf-${i-1}`)?.focus(),0); }}}
+                                style={{width:44,height:52,textAlign:'center',fontSize:20,fontWeight:700,border:passkeyConfirm[i]&&passkeyConfirm[i]===passkeyPin[i]?'2px solid var(--success)':passkeyConfirm[i]?'2px solid var(--danger)':'2px solid var(--border)',borderRadius:10,background:'var(--surface)',color:'var(--text)',caretColor:'transparent',outline:'none'}}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        {passkeyErr && <div className="alert alert--danger" style={{marginBottom:12}}>{passkeyErr}</div>}
+                        <div style={{display:'flex',gap:10}}>
+                          <button className="btn btn--primary" onClick={passkey_create}
+                            disabled={passkeyBusy||passkeyPin.replace(/\s/g,'').length<6||passkeyConfirm.replace(/\s/g,'').length<6}>
+                            {passkeyBusy?'Saving…':'Save passkey'}
+                          </button>
+                          <button className="btn btn--ghost" onClick={()=>{ setPasskeyStep('idle'); setPasskeyPin(''); setPasskeyConfirm(''); setPasskeyErr(''); }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {passkeyStep==='delete' && (
+                      <div>
+                        <div className="alert alert--warning" style={{marginBottom:16,display:'flex',gap:10,alignItems:'flex-start'}}>
+                          <AlertTriangle size={16} style={{flexShrink:0,marginTop:2}}/>
+                          <span>Removing your passkey means you'll need an email code every time you sign in.</span>
+                        </div>
+                        <p style={{marginBottom:12,fontSize:'.88rem'}}>Enter your current passkey PIN to confirm:</p>
+                        <div style={{display:'flex',gap:8,marginBottom:14}}>
+                          {[0,1,2,3,4,5].map(i=>(
+                            <input key={i} id={`pk-del-${i}`} type="text" inputMode="numeric" maxLength={1}
+                              value={passkeyPin[i]||''}
+                              autoFocus={i===0}
+                              onChange={e=>{
+                                const ch=e.target.value.replace(/\D/g,'').slice(-1);
+                                const arr=(passkeyPin+'      ').slice(0,6).split(''); arr[i]=ch;
+                                setPasskeyPin(arr.join('').trimEnd()); setPasskeyErr('');
+                                if(ch&&i<5) setTimeout(()=>document.getElementById(`pk-del-${i+1}`)?.focus(),0);
+                              }}
+                              onKeyDown={e=>{ if(e.key==='Backspace'&&!passkeyPin[i]&&i>0){ const arr=(passkeyPin+'      ').slice(0,6).split(''); arr[i-1]=''; setPasskeyPin(arr.join('').trimEnd()); setTimeout(()=>document.getElementById(`pk-del-${i-1}`)?.focus(),0); }}}
+                              style={{width:44,height:52,textAlign:'center',fontSize:20,fontWeight:700,border:passkeyPin[i]?'2px solid var(--danger)':'2px solid var(--border)',borderRadius:10,background:'var(--surface)',color:'var(--text)',caretColor:'transparent',outline:'none'}}
+                            />
+                          ))}
+                        </div>
+                        {passkeyErr && <div className="alert alert--danger" style={{marginBottom:12}}>{passkeyErr}</div>}
+                        <div style={{display:'flex',gap:10}}>
+                          <button className="btn btn--danger" onClick={passkey_delete}
+                            disabled={passkeyBusy||passkeyPin.replace(/\s/g,'').length<6}>
+                            {passkeyBusy?'Removing…':'Confirm remove'}
+                          </button>
+                          <button className="btn btn--ghost" onClick={()=>{ setPasskeyStep('idle'); setPasskeyPin(''); setPasskeyErr(''); }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </section>
                 </div>
               </>
             )}
@@ -2099,6 +2402,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                 '2FA Enabled':      { dot:'success', icon:<Shield size={14}/>,       kind:'success' },
                 '2FA Disabled':     { dot:'warning', icon:<Shield size={14}/>,       kind:'warning' },
                 'Password Changed': { dot:'warning', icon:<Lock size={14}/>,         kind:'warning' },
+                'Profile Updated':  { dot:'info',    icon:<User size={14}/>,          kind:'info'    },
                 'Login Success':    { dot:'success', icon:<CheckCircle size={14}/>,  kind:'success' },
                 'Login Failure':    { dot:'danger',  icon:<X size={14}/>,            kind:'danger'  },
                 'Account Linked':   { dot:'primary', icon:<Link size={14}/>,         kind:'info'    },
@@ -2174,7 +2478,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                             : 'No events match your filter.'}
                         </div>
                       ) : (
-                        <table className="table">
+                        <div className="table-scroll"><table className="table">
                           <thead>
                             <tr>
                               <th style={{width:18}}></th>
@@ -2215,7 +2519,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
                               );
                             })}
                           </tbody>
-                        </table>
+                        </table></div>
                       )}
                     </section>
                   </div>
@@ -2226,7 +2530,7 @@ export default function Dashboard({ onLogout, onSwitchView, user: propUser }) {
           </main>
 
           {/* Footer */}
-          <footer className="d-footer">
+          <footer className="d-footer" style={{flexWrap:"wrap",gap:12}}>
             <span>© {new Date().getFullYear()} SyncVeil Inc. All rights reserved.</span>
             <div className="d-footer-meta">
               <span>SECURITY</span>

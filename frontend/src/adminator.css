@@ -534,3 +534,372 @@ input, textarea, select { font: inherit; color: inherit; }
   .form-grid .span-2 { grid-column: span 1; }
   .social-row { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   RESPONSIVE — Full mobile / tablet / desktop coverage
+   Breakpoints:
+     xs  < 480px   (small phones)
+     sm  < 640px   (phones)
+     md  < 768px   (large phones / small tablets)
+     lg  < 1024px  (tablets)
+     xl  < 1280px  (small laptops)
+   ============================================================ */
+
+/* ── Mobile overlay for sidebar ──────────────────────────── */
+.mob-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 199;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(2px);
+  animation: adm-fade-in 200ms ease both;
+}
+
+/* ── Hamburger — hidden by default on desktop ────────────── */
+.mob-hamburger { display: none !important; }
+
+/* ── Tables: scroll wrapper ──────────────────────────────── */
+.table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ── Hero actions wrap on small screens ──────────────────── */
+.hero-actions { flex-wrap: wrap; }
+
+/* ── Session actions: wrap ───────────────────────────────── */
+.session-actions { flex-wrap: wrap; }
+
+/* ── Intel tabs: scrollable ──────────────────────────────── */
+.tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex-shrink: 0; }
+
+/* ============================================================
+   ≤ 1280px  small laptops
+   ============================================================ */
+@media (max-width: 1280px) {
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .col-4 { grid-column: span 6; }
+}
+
+/* ============================================================
+   ≤ 1024px  tablets / collapsed sidebar
+   ============================================================ */
+@media (max-width: 1024px) {
+  /* Sidebar collapses to icon-only rail */
+  .adm-shell { grid-template-columns: 64px 1fr; }
+  .d-sidebar { padding: 18px 10px; align-items: center; }
+  .brand-text, .brand-tag, .nav-label, .workspace-text { display: none !important; }
+  .brand { justify-content: center; padding: 0 0 16px; }
+  .nav-link { justify-content: center; padding: 10px 0; width: 100%; }
+  .nav-link > span { display: none; }
+  .nav-badge { display: none; }
+  .workspace { justify-content: center; padding: 8px 0; }
+  .workspace-avatar { width: 30px; height: 30px; font-size: 11px; }
+
+  /* Grid cols */
+  .col-6 { grid-column: span 12; }
+  .col-4 { grid-column: span 6; }
+  .sv-radials { grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+  /* KPI */
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+}
+
+/* ============================================================
+   ≤ 768px  large phones / small tablets — full mobile sidebar
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Sidebar becomes a drawer */
+  .adm-shell { grid-template-columns: 1fr; }
+  .mob-overlay { display: block; }
+  .mob-hamburger { display: grid !important; }
+
+  .d-sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0;
+    width: 260px; z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 280ms cubic-bezier(.2,.7,.2,1);
+    box-shadow: var(--shadow-lg);
+    padding: 22px 16px;
+    align-items: flex-start;
+  }
+  /* Brand text visible again inside drawer */
+  .d-sidebar .brand-text,
+  .d-sidebar .brand-tag,
+  .d-sidebar .nav-label,
+  .d-sidebar .workspace-text { display: block !important; }
+  .d-sidebar .nav-link { justify-content: flex-start; padding: 9px 12px; width: 100%; }
+  .d-sidebar .nav-link > span { display: inline; }
+  .d-sidebar .nav-badge { display: inline-flex; }
+  .d-sidebar .workspace { justify-content: flex-start; padding: 6px 10px; }
+  .d-sidebar .workspace-avatar { width: 32px; height: 32px; font-size: 12.5px; }
+  .d-sidebar .brand { justify-content: flex-start; }
+
+  /* Open state slides sidebar in */
+  .sidebar-open .d-sidebar { transform: translateX(0); }
+
+  /* Topbar */
+  .d-topbar { padding: 0 14px; }
+  .crumbs .sep { display: none; }
+
+  /* Content */
+  .content { padding: 18px 14px 14px; }
+
+  /* Grid: everything full-width */
+  .col-4, .col-6, .col-8 { grid-column: span 12; }
+  .grid { gap: 14px; }
+
+  /* KPI: 2-col on tablets */
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+  .kpi-value { font-size: 32px; }
+
+  /* Radials: single column */
+  .sv-radials { grid-template-columns: 1fr; gap: 16px; }
+
+  /* Hero */
+  .hero { flex-direction: column; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+  .hero-title { font-size: clamp(20px, 5vw, 28px); }
+  .hero-actions { flex-direction: column; width: 100%; }
+  .hero-actions .btn { width: 100%; justify-content: center; }
+
+  /* Form grid: single column */
+  .form-grid { grid-template-columns: 1fr; gap: 14px; }
+  .form-grid .span-2 { grid-column: span 1; }
+
+  /* Tables: scrollable */
+  .table { min-width: 540px; }
+  .card > .table { margin: 0 -22px; width: calc(100% + 44px); padding: 0 22px; }
+
+  /* Sessions */
+  .session-row { flex-wrap: wrap; }
+  .session-actions { width: 100%; margin-top: 8px; justify-content: flex-start; }
+
+  /* Provider rows */
+  .provider-row { flex-wrap: wrap; gap: 10px; }
+
+  /* Event rows */
+  .event-row { gap: 8px; }
+  .event-time { font-size: 10px; }
+
+  /* Dropzone */
+  .dropzone { padding: 28px 16px; }
+
+  /* Card padding */
+  .card { padding: 16px; }
+  .card-head { padding: 0 0 12px; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+
+  /* Auth shell */
+  .adm-auth-shell { grid-template-columns: 1fr; }
+  .auth-aside { display: none; }
+  .auth-main { padding: 24px 20px; min-height: 100vh; }
+  .auth-card { max-width: 100%; }
+}
+
+/* ============================================================
+   ≤ 480px  small phones
+   ============================================================ */
+@media (max-width: 480px) {
+  /* KPI: single column on very small phones */
+  .kpi-grid { grid-template-columns: 1fr; }
+  .kpi-value { font-size: 28px; }
+  .kpi-card { padding: 16px; }
+
+  /* Topbar compact */
+  .d-topbar { height: 52px; }
+  .topbar-actions { gap: 2px; }
+
+  /* Content */
+  .content { padding: 14px 12px 12px; }
+
+  /* Buttons smaller */
+  .btn { font-size: 12px; padding: 8px 11px; }
+  .btn--lg { padding: 10px 14px; font-size: 13px; }
+
+  /* Cards tighter */
+  .card { padding: 14px 12px; border-radius: 10px; }
+
+  /* Tabs: smaller text */
+  .tab { font-size: 11.5px; padding: 8px 10px; }
+
+  /* Hero */
+  .hero-title { font-size: clamp(18px, 5vw, 24px); }
+  .hero-sub { font-size: 13px; }
+
+  /* Social row: stack */
+  .social-row { grid-template-columns: 1fr; }
+
+  /* OTP box */
+  .otp-box input { font-size: 22px; letter-spacing: 0.4em; }
+
+  /* File row */
+  .file-row { gap: 8px; }
+  .file-icon { width: 30px; height: 30px; }
+
+  /* Radial */
+  .sv-radial { grid-template-columns: 60px 1fr; }
+  .sv-radial-chart { width: 60px; height: 60px; }
+  .sv-radial-name { font-size: 12.5px; }
+
+  /* Footer */
+  .d-footer { flex-direction: column; gap: 8px; text-align: center; }
+  .d-footer-meta { flex-wrap: wrap; justify-content: center; }
+
+  /* Auth */
+  .auth-main { padding: 20px 16px; }
+  .auth-card h2 { font-size: 22px; }
+
+  /* Toast: full width */
+  .adm-toast { left: 12px; right: 12px; bottom: 12px; max-width: none; }
+}
+
+/* ============================================================
+   Home / public page responsive
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Navigation */
+  nav#public-nav .nav-links { display: none; }
+
+  /* Section padding */
+  .py-20 { padding-top: 3rem; padding-bottom: 3rem; }
+  .py-28 { padding-top: 3.5rem; padding-bottom: 3.5rem; }
+  .pt-28 { padding-top: 5rem; }
+  .pb-16 { padding-bottom: 2.5rem; }
+
+  /* Hero text */
+  .text-5xl { font-size: 2.25rem; }
+  .text-6xl { font-size: 2.5rem; }
+  .text-4xl { font-size: 1.875rem; }
+
+  /* Grid fallback */
+  .lg\\:grid-cols-2 { grid-template-columns: 1fr; }
+  .md\\:grid-cols-3 { grid-template-columns: 1fr; }
+  .lg\\:block { display: none; }
+
+  /* Feature grid */
+  .grid-cols-3 { grid-template-columns: 1fr; }
+  .md\\:grid-cols-3 { grid-template-columns: 1fr; }
+
+  /* CTA */
+  .lg\\:text-6xl { font-size: 2rem; }
+
+  /* Stats strip */
+  .stats-strip { padding: 28px 24px; border-radius: 14px; }
+  .sm\\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .text-5xl { font-size: 1.875rem; }
+  .text-4xl { font-size: 1.5rem; }
+  .sm\\:grid-cols-2 { grid-template-columns: 1fr; }
+  .stats-strip { padding: 20px 16px; }
+}
+
+/* ============================================================
+   Navigation (public) responsive
+   ============================================================ */
+@media (max-width: 768px) {
+  nav#public-nav .nav-desktop-links { display: none; }
+}
+
+/* ── col-8 responsive ── */
+@media (max-width: 768px) {
+  .col-8 { grid-column: span 12; }
+}
+@media (max-width: 1024px) {
+  .col-8 { grid-column: span 12; }
+}
+
+/* ── Topbar breadcrumb: hide on very small ── */
+@media (max-width: 380px) {
+  .crumbs { display: none; }
+}
+
+/* ── KPI value scaling ── */
+@media (max-width: 360px) {
+  .kpi-value { font-size: 24px; }
+  .kpi-card { padding: 12px 10px; }
+}
+
+/* ── Prevent horizontal overflow globally ── */
+html, body { overflow-x: hidden; max-width: 100vw; }
+.adm-root { overflow-x: hidden; }
+
+/* ── File row buttons: stack on tiny screens ── */
+@media (max-width: 480px) {
+  .file-row { flex-wrap: wrap; }
+  .file-row > .icon-btn { flex-shrink: 0; }
+}
+
+/* ── Provider row: stack button below on xs ── */
+@media (max-width: 400px) {
+  .provider-row { flex-wrap: wrap; }
+  .provider-row > button { width: 100%; justify-content: center; margin-top: 4px; }
+}
+
+/* ── Dropzone text: smaller on mobile ── */
+@media (max-width: 480px) {
+  .dropzone { padding: 20px 12px; }
+  .dropzone svg { width: 24px; height: 24px; }
+  .dropzone p { font-size: 12px; }
+}
+
+/* ── Toast: better mobile positioning ── */
+@media (max-width: 480px) {
+  .adm-toast {
+    left: 8px; right: 8px; bottom: 8px;
+    max-width: none; width: auto;
+  }
+}
+
+/* ── Radial grid: 2-col on tablet, 1-col on phone ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sv-radials { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Hero: never let actions overflow ── */
+@media (max-width: 520px) {
+  .hero-actions .btn { font-size: 12.5px; padding: 8px 12px; }
+}
+
+/* ── Ensure sidebar footer is never clipped ── */
+@media (max-width: 768px) {
+  .sidebar-footer { padding-top: 12px; }
+}
+
+/* ── Auth: better padding on smallest phones ── */
+@media (max-width: 360px) {
+  .auth-main { padding: 16px 12px; }
+  .auth-card h2 { font-size: 20px; }
+  .otp-box input { font-size: 20px; }
+}
+
+/* ── News section cards: full width on mobile ── */
+@media (max-width: 640px) {
+  .md\\:grid-cols-2 { grid-template-columns: 1fr; }
+}
+
+/* ── BreachMap trend bars: don't overflow ── */
+.breach-trend-bar { min-width: 0; flex: 1; }
+
+/* ── Tab bar: touch-friendly size ── */
+@media (max-width: 480px) {
+  .tabs { margin-bottom: 12px; }
+  .tab { padding: 9px 9px; font-size: 11px; }
+}
+
+/* ── Form actions: stack on mobile ── */
+@media (max-width: 480px) {
+  .form-actions { flex-direction: column; }
+  .form-actions .btn { width: 100%; justify-content: center; }
+}
+
+/* ── Mobile sidebar close button ── */
+@media (max-width: 768px) {
+  .mob-sidebar-close { display: block !important; }
+  .d-sidebar { position: relative; }
+}
+
+/* ── Sidebar: always visible position on tablet icon-rail ── */
+@media (min-width: 769px) {
+  .mob-sidebar-close { display: none !important; }
+  .mob-overlay { display: none !important; }
+  .d-sidebar { transform: none !important; position: sticky !important; }
+}

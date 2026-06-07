@@ -35,6 +35,7 @@ class User(Base):
     vault_files        = relationship("VaultFile",              back_populates="user", cascade="all, delete-orphan")
     vault_audit_logs   = relationship("VaultAuditLog", foreign_keys="VaultAuditLog.user_id", cascade="all, delete-orphan")
     two_factor_config  = relationship("TwoFactorConfig",        back_populates="user", uselist=False, cascade="all, delete-orphan")
+    passkey            = relationship("Passkey",                back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     __table_args__ = (
         Index('idx_user_email_verified', 'email', 'email_verified'),
@@ -279,3 +280,18 @@ class VaultAuditLog(Base):
         Index("idx_vault_audit_file",      "file_id",  "created_at"),
         Index("idx_vault_audit_event",     "event_type","created_at"),
     )
+
+
+class Passkey(Base):
+    """Cloud-stored 6-digit PIN passkey — works across all devices."""
+    __tablename__ = "passkeys"
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id     = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    pin_hash    = Column(String(64), nullable=False)          # SHA-256 of 6-digit PIN
+    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    last_used_at= Column(DateTime, nullable=True)
+
+    user = relationship("User", back_populates="passkey")
+
+    __table_args__ = (Index("idx_passkey_user", "user_id"),)

@@ -10,7 +10,7 @@ from sqlalchemy import inspect
 from sqlalchemy.dialects.postgresql import UUID
 
 revision = '002'
-down_revision = None   # standalone — runs without needing 001
+down_revision = '001_initial_schema'
 branch_labels = None
 depends_on = None
 

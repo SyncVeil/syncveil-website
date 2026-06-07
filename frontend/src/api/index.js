@@ -30,10 +30,31 @@ const authHdr = () => {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` };
 };
 
+let _refreshing = null; // singleton refresh promise
+
 const req = async (method, path, body) => {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method, headers: authHdr(), body: body ? JSON.stringify(body) : undefined,
   });
+  // Auto-refresh on 401 (expired access token)
+  if (res.status === 401 && localStorage.getItem('refresh_token')) {
+    if (!_refreshing) {
+      _refreshing = authAPI.refresh().finally(() => { _refreshing = null; });
+    }
+    try {
+      await _refreshing;
+      // Retry original request with new token
+      const res2 = await fetch(`${API_BASE_URL}${path}`, {
+        method, headers: authHdr(), body: body ? JSON.stringify(body) : undefined,
+      });
+      const data2 = await res2.json().catch(() => ({}));
+      if (!res2.ok) throw new APIError(res2.status, getMsg(data2, `${method} ${path} failed`), data2);
+      return data2;
+    } catch {
+      clearAuth();
+      throw new APIError(401, 'Session expired — please sign in again');
+    }
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new APIError(res.status, getMsg(data, `${method} ${path} failed`), data);
   return data;
@@ -188,6 +209,7 @@ export const dashboardAPI = {
     setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
     return { success: true };
   },
+  changePassword:      (current, next) => req('POST', '/api/profile/change-password', { current_password: current, new_password: next }),
   getGoogleOAuthUrl:   () => req('GET',  '/api/auth/google'),
   getMicrosoftOAuthUrl:() => req('GET',  '/api/auth/microsoft'),
 
@@ -253,6 +275,39 @@ export const publicAPI = {
     const res = await fetch(`${API_BASE_URL}${path}?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new APIError(res.status, getMsg(data, `${provider} OAuth failed`), data);
+    return data;
+  },
+};
+
+// ─── Passkey ──────────────────────────────────────────────────────────────────
+export const passkeyAPI = {
+  /** Create or update the cloud passkey PIN (requires auth) */
+  createPasskey: async (pin) => {
+    const data = await req('POST', '/auth/passkey/create', { pin });
+    return data;
+  },
+
+  /** Get passkey status for current user */
+  getStatus: async () => {
+    try { return await req('GET', '/auth/passkey/status'); }
+    catch { return { has_passkey: false }; }
+  },
+
+  /** Verify passkey during login (no JWT — called after password check) */
+  verifyPasskey: async (email, pin) => {
+    const data = await pubReq('POST', '/auth/passkey/verify', { email, pin });
+    if (data.access_token) {
+      localStorage.setItem('access_token',  data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      if (data.user?.id)    localStorage.setItem('user_id',    data.user.id);
+      if (data.user?.email) localStorage.setItem('user_email', data.user.email);
+    }
+    return data;
+  },
+
+  /** Delete passkey (requires PIN confirmation) */
+  deletePasskey: async (pin) => {
+    const data = await req('DELETE', '/auth/passkey/delete', { pin });
     return data;
   },
 };

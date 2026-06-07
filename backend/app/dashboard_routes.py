@@ -1,6 +1,7 @@
 """Dashboard, Vault, Security, OAuth endpoints"""
 from __future__ import annotations
 import os
+from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID
@@ -148,6 +149,46 @@ def update_profile(payload: ProfileUpdate, auth: AuthUser = Depends(get_current_
 
 
 
+# ─── Change Password ─────────────────────────────────────────────────────────
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+@router.post("/profile/change-password")
+def change_password(p: ChangePasswordRequest, auth: AuthUser = Depends(get_current_user)):
+    from app.core.security import verify_password, hash_password
+    user, db = auth.user, auth.db
+    # Rate-limit: max 5 failed change-password attempts per hour
+    one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+    recent_fails = db.query(LoginLog).filter(
+        LoginLog.user_id == user.id,
+        LoginLog.failure_reason == "wrong_current_password",
+        LoginLog.timestamp >= one_hour_ago,
+    ).count()
+    if recent_fails >= 5:
+        raise HTTPException(429, "Too many failed attempts. Try again later.")
+    if not verify_password(p.current_password, user.password_hash):
+        db.add(LoginLog(user_id=user.id, email=user.email, success=False,
+                        failure_reason="wrong_current_password",
+                        ip_address=auth.session.ip_address, device_info=auth.session.device_info,
+                        timestamp=datetime.utcnow()))
+        db.commit()
+        raise HTTPException(400, "Current password is incorrect")
+    if len(p.new_password) < 8:
+        raise HTTPException(400, "New password must be at least 8 characters")
+    user.password_hash = hash_password(p.new_password)
+    # Revoke all OTHER sessions (keep current one active)
+    now = datetime.utcnow()
+    other_sessions = auth.db.query(UserSession).filter(
+        UserSession.user_id == user.id, UserSession.revoked.is_(False), UserSession.id != auth.session.id
+    ).all()
+    for s in other_sessions:
+        s.revoked = True; s.revoked_at = now; s.revoked_reason = "password_changed"
+    auth.db.commit()
+    return {"success": True, "message": "Password changed. Other devices have been signed out."}
+
+
 # ─── Security ─────────────────────────────────────────────────────────────────
 
 @router.get("/security/overview")
@@ -204,7 +245,26 @@ def email_security(auth: AuthUser = Depends(get_current_user)):
     spam_score = min(100, fails_7d * 8 + max(0, unique_ips - 1) * 5)
     spam_level = "critical" if spam_score>=70 else "high" if spam_score>=40 else "medium" if spam_score>=20 else "low"
     connected  = db.query(ConnectedAccount).filter(ConnectedAccount.user_id==user.id).all()
-    return {"email": user.email, "email_verified": user.email_verified, "spam_risk_score": spam_score, "spam_risk_level": spam_level, "failed_attempts_7d": fails_7d, "unique_ips_7d": unique_ips, "breach_status": "clear", "last_checked": now.isoformat(), "connected_emails": [{"provider": c.provider, "email": c.email, "connected_at": c.connected_at.isoformat()} for c in connected]}
+    # Fetch DNS records for the user's email domain
+    dns_data = {"spf": {"exists": False, "valid": False, "record": None}, "dkim": {"exists": False, "valid": False, "record": None}, "dmarc": {"exists": False, "valid": False, "record": None}}
+    try:
+        from app.core.threat_intel import check_dns_records
+        domain = user.email.split("@")[-1] if "@" in user.email else ""
+        if domain:
+            dns_data = check_dns_records(domain)
+    except Exception:
+        pass
+    return {
+        "email": user.email, "email_verified": user.email_verified,
+        "spam_risk_score": spam_score, "spam_risk_level": spam_level,
+        "failed_attempts_7d": fails_7d, "unique_ips_7d": unique_ips,
+        "breach_status": "clear", "last_checked": now.isoformat(),
+        "connected_emails": [{"provider": c.provider, "email": c.email, "connected_at": c.connected_at.isoformat()} for c in connected],
+        "spf": dns_data.get("spf", {}),
+        "dkim": dns_data.get("dkim", {}),
+        "dmarc": dns_data.get("dmarc", {}),
+        "dns_score": dns_data.get("score", 0),
+    }
 
 
 # ─── Connected Accounts ───────────────────────────────────────────────────────
@@ -300,10 +360,44 @@ def ms_callback(code: str, state: str, db: Session = Depends(get_db)):
 def public_snapshot(db: Session = Depends(get_db)):
     try:
         users  = db.query(User).filter(User.disabled.is_(False)).count()
-        events = db.query(LoginLog).count()
-        return {"data": {"totalUsers": users, "totalEvents": events, "status": "operational", "lastUpdated": datetime.utcnow().isoformat()}}
+        total  = db.query(LoginLog).count()
+        recent = db.query(LoginLog).order_by(desc(LoginLog.timestamp)).limit(20).all()
+        recent_events = [
+            {
+                "message": l.failure_reason or ("Successful login" if l.success else "Failed login"),
+                "success": l.success,
+                "ip_address": l.ip_address,
+                "location": getattr(l, "location", None),
+                "timestamp": l.timestamp.isoformat(),
+            }
+            for l in recent
+        ]
+        # trend_7d
+        seven_ago = datetime.utcnow() - timedelta(days=7)
+        trend_rows = db.query(LoginLog).filter(LoginLog.timestamp >= seven_ago).all()
+        by_day = defaultdict(lambda: {"attempts": 0, "failed_attempts": 0})
+        for row in trend_rows:
+            day = row.timestamp.strftime("%Y-%m-%d")
+            by_day[day]["attempts"] += 1
+            if not row.success:
+                by_day[day]["failed_attempts"] += 1
+        trend_7d = [{"date": d, **v} for d, v in sorted(by_day.items())]
+
+        failed_total = db.query(LoginLog).filter(LoginLog.success.is_(False)).count()
+        risk_challenges = db.query(LoginLog).filter(LoginLog.failure_reason == "otp_challenge_sent").count()
+
+        return {"data": {
+            "totalUsers": users, "totalEvents": total,
+            "total_attempts": total, "failed_attempts": failed_total,
+            "risk_challenges": risk_challenges,
+            "status": "operational", "lastUpdated": datetime.utcnow().isoformat(),
+            "recent_events": recent_events, "trend_7d": trend_7d,
+        }}
     except Exception:
-        return {"data": {"totalUsers": 0, "totalEvents": 0, "status": "operational", "lastUpdated": datetime.utcnow().isoformat()}}
+        return {"data": {"totalUsers": 0, "totalEvents": 0, "total_attempts": 0,
+                         "failed_attempts": 0, "risk_challenges": 0,
+                         "status": "operational", "lastUpdated": datetime.utcnow().isoformat(),
+                         "recent_events": [], "trend_7d": []}}
 
 
 # ─── Threat Intelligence Endpoints ───────────────────────────────────────────

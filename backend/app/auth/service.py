@@ -264,9 +264,14 @@ def login_user(db: Session, email: str, password: str, *, ip: str, ua: str) -> d
     _log(db, email=norm, ip=ip, ua=ua, success=False, user=user, reason="otp_challenge_sent")
     db.commit()
 
+    # Check if user has a passkey set
+    from app.db.models import Passkey
+    has_passkey = db.query(Passkey).filter(Passkey.user_id == user.id).first() is not None
+
     return {
         "challenge_required": True,
         "email": user.email,
+        "has_passkey": has_passkey,
         "challenge_token": otp if not email_sent else None,   # dev fallback
         "message": "A sign-in code was sent to your email.",
     }

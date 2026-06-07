@@ -13,7 +13,7 @@ export default function Home({ onSwitchView }) {
   return (
     <div id="view-home" className="view-section active">
       {/* HERO SECTION */}
-      <div className="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden">
+      <div className="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden" style={{paddingTop:"clamp(80px,10vw,9rem)",paddingBottom:"clamp(40px,5vw,6rem)"}}>
         <div className="absolute top-0 right-0 -z-10 w-1/2 h-full bg-gradient-to-bl from-indigo-50 via-teal-50 to-white opacity-60 rounded-bl-[100px]"></div>
         <div className="absolute bottom-0 left-0 -z-10 w-96 h-96 bg-rose-50 rounded-full blur-3xl opacity-50 translate-y-1/2 -translate-x-1/4"></div>
 
@@ -26,11 +26,11 @@ export default function Home({ onSwitchView }) {
                 Privacy is a right, not a privilege
               </div>
 
-              <h1 className="text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight">
+              <h1 className="text-4xl lg:text-6xl font-extrabold text-slate-900 leading-tight" style={{fontSize:"clamp(2rem,6vw,3.75rem)"}}>
                 Privacy that <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-teal-500">Empowers</span>
               </h1>
 
-              <p className="text-xl text-slate-600 leading-relaxed max-w-lg">
+              <p className="text-xl text-slate-600 leading-relaxed max-w-lg" style={{fontSize:"clamp(1rem,2.5vw,1.25rem)"}}>
                 SyncVeil gives you complete control over your digital footprint. Monitor, manage, and secure your data without compromising speed.
               </p>
 
@@ -122,11 +122,11 @@ export default function Home({ onSwitchView }) {
       <section id="features" className="relative py-20 lg:py-28 bg-gradient-to-b from-white to-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6">Core Features</h2>
+            <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6" style={{fontSize:"clamp(1.75rem,5vw,3rem)"}}>Core Features</h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">Everything you need to protect your data and maintain your privacy in today's digital world.</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8" style={{gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,280px),1fr))"}}>
             {[
               {
                 icon: '🔐',
@@ -187,7 +187,7 @@ export default function Home({ onSwitchView }) {
       {/* CTA SECTION */}
       <section className="relative py-20 lg:py-28 bg-gradient-to-r from-indigo-600 to-teal-600 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl lg:text-5xl font-extrabold mb-6">Ready to Take Control?</h2>
+          <h2 className="text-4xl lg:text-5xl font-extrabold mb-6" style={{fontSize:"clamp(1.75rem,5vw,3rem)"}}>Ready to Take Control?</h2>
           <p className="text-xl text-indigo-100 mb-8">Start protecting your digital life today. SyncVeil makes security effortless.</p>
           <button 
             onClick={() => onSwitchView('auth-choice')}

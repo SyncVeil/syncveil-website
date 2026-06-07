@@ -61,16 +61,42 @@ function App() {
   const [verifyToken, setVerifyToken] = useState(null);
   // OAuth callback state: null | { provider, status: 'loading'|'success'|'error', message }
   const [oauthStatus, setOAuthStatus] = useState(null);
+  const [oauthRefreshKey, setOAuthRefreshKey] = useState(0);
 
-  // Check existing session on mount
+  // Check existing session on mount + attempt token refresh
   useEffect(() => {
     const authenticated = isAuthenticated();
     if (authenticated) {
       setIsAuth(true);
       setUser(getCurrentUser());
+      // Proactively refresh token on mount (handles page reload after token age)
+      authAPI.refresh().then(r => {
+        if (r?.user) setUser(r.user);
+      }).catch(() => {
+        // Refresh failed = session truly expired → force logout
+        setIsAuth(false);
+        setUser(null);
+      });
     }
     setLoading(false);
   }, []);
+
+  // Auto-refresh access token every 12 minutes (expires in 15)
+  useEffect(() => {
+    if (!isAuth) return;
+    const interval = setInterval(async () => {
+      try {
+        const r = await authAPI.refresh();
+        if (r?.user) setUser(r.user);
+      } catch {
+        // Token refresh failed — session expired
+        setIsAuth(false);
+        setUser(null);
+        setCurrentView('home');
+      }
+    }, 12 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [isAuth]);
 
   // Handle /verify-email?token=... deep links from email
   useEffect(() => {
@@ -112,9 +138,10 @@ function App() {
       .then(() => {
         setOAuthStatus({ provider, status: 'success',
           message: `Your ${provider.charAt(0).toUpperCase() + provider.slice(1)} account was connected successfully.` });
-        // After 2s auto-navigate to dashboard (user is already authenticated)
+        // After 2s auto-navigate to dashboard and signal it to refresh connected accounts
         setTimeout(() => {
           setOAuthStatus(null);
+          setOAuthRefreshKey(k => k + 1);
           setCurrentView(isAuthenticated() ? 'dashboard' : 'home');
         }, 2000);
       })
@@ -150,7 +177,7 @@ function App() {
   };
 
   const handleLogout = async (allDevices = false) => {
-    if (!confirm('Are you sure you want to log out?')) return;
+    // logout confirmation handled by button design
     try {
       await authAPI.logout(allDevices);
     } catch { /* ignore */ } finally {
@@ -196,6 +223,7 @@ function App() {
             onLogout={handleLogout}
             onSwitchView={switchView}
             user={user}
+            oauthRefreshKey={oauthRefreshKey}
           />
         )}
 

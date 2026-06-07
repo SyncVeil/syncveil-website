@@ -35,8 +35,8 @@ export default function BreachMap() {
   const maxFailed = trend.reduce((max, day) => Math.max(max, day.failed_attempts || 0), 1);
 
   return (
-    <div className="space-y-8">
-      <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-white p-6">
+    <div className="space-y-8" style={{overflowX:'hidden'}}>
+      <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-white p-6" style={{padding:'clamp(14px,3vw,24px)'}}>
         <h3 className="text-lg font-bold text-slate-900 mb-1">Live Security Activity (Last 30 Days)</h3>
         <p className="text-sm text-slate-600 mb-5">
           Real telemetry generated from SyncVeil backend login protection systems.
@@ -47,7 +47,7 @@ export default function BreachMap() {
 
         {!loading && !error && (
           <>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" style={{gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))'}}>
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
                 <p className="text-xs text-slate-500">Total Attempts</p>
                 <p className="text-2xl font-bold text-slate-900">{snapshot?.total_attempts ?? 0}</p>
@@ -68,7 +68,8 @@ export default function BreachMap() {
 
             <div className="space-y-2">
               <h4 className="text-sm font-semibold text-slate-900">Failed Attempts Trend (7 Days)</h4>
-              <div className="grid grid-cols-7 gap-2 h-28 items-end">
+              <div style={{overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
+              <div className="grid grid-cols-7 gap-2 h-28 items-end" style={{minWidth:280}}>
                 {trend.map((day) => {
                   const value = day.failed_attempts || 0;
                   const ratio = Math.max(6, Math.round((value / maxFailed) * 100));
@@ -84,7 +85,7 @@ export default function BreachMap() {
                     </div>
                   );
                 })}
-              </div>
+              </div></div>
             </div>
           </>
         )}

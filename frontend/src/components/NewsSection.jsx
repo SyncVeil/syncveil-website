@@ -35,7 +35,7 @@ export default function NewsSection() {
     <section className="py-20 lg:py-28 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6">Security Operations Feed</h2>
+          <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6" style={{fontSize:"clamp(1.75rem,5vw,3rem)"}}>Security Operations Feed</h2>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
             Live operational events produced by SyncVeil authentication safeguards.
           </p>
@@ -53,7 +53,7 @@ export default function NewsSection() {
             )}
 
             {events.map((event, idx) => (
-              <div key={`${event.timestamp}-${idx}`} className="p-6 bg-gradient-to-r from-slate-50 to-white rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-lg transition-all duration-300">
+              <div key={`${event.timestamp}-${idx}`} className="p-6 bg-gradient-to-r from-slate-50 to-white rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-lg transition-all duration-300" style={{padding:"clamp(14px,3vw,24px)"}}>
                 <div className="flex items-start gap-4">
                   <div className="text-3xl">{event.success ? '✅' : '🛡️'}</div>
                   <div className="flex-1">

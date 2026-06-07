@@ -5,6 +5,7 @@ from app.auth.routes import router as auth_router
 from app.dashboard_routes import router as dashboard_router
 from app.vault_routes import router as vault_router
 from app.twofa_routes import router as twofa_router
+from app.passkey_routes import router as passkey_router
 from app.core.config import get_settings
 import sys
 
@@ -22,7 +23,10 @@ def _apply_schema(engine):
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS country      VARCHAR(100)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS date_of_birth DATE",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url   VARCHAR(500)",
-        "ALTER TABLE login_logs ADD COLUMN IF NOT EXISTS location VARCHAR(255)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at   TIMESTAMP NOT NULL DEFAULT NOW()",
+        "ALTER TABLE login_logs ADD COLUMN IF NOT EXISTS location    VARCHAR(255)",
+        "ALTER TABLE login_logs ADD COLUMN IF NOT EXISTS device_info TEXT",
+        "ALTER TABLE login_logs ADD COLUMN IF NOT EXISTS failure_reason VARCHAR(255)",
         """CREATE TABLE IF NOT EXISTS connected_accounts (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             user_id UUID NOT NULL REFERENCES users(id),
@@ -50,7 +54,7 @@ def _apply_schema(engine):
             size_bytes BIGINT NOT NULL DEFAULT 0,
             sha256 VARCHAR(64),
             encrypted_data BYTEA NOT NULL,
-            nonce BYTEA NOT NULL,
+            nonce BYTEA,
             uploaded_at TIMESTAMP NOT NULL DEFAULT NOW())""",
         "CREATE INDEX IF NOT EXISTS idx_vault_user ON vault_files(user_id, uploaded_at)",
         "ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS container_size BIGINT",
@@ -58,6 +62,7 @@ def _apply_schema(engine):
         "ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS encrypted_file_key BYTEA",
         "ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS compression_type VARCHAR(20) NOT NULL DEFAULT 'zstd'",
         "ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS encryption_version INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS key_version INTEGER NOT NULL DEFAULT 1",
         "ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS storage_backend VARCHAR(50) NOT NULL DEFAULT 'postgresql'",
         "ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1",
         "ALTER TABLE vault_files ADD COLUMN IF NOT EXISTS malware_scan_status VARCHAR(20) NOT NULL DEFAULT 'skipped'",
@@ -101,6 +106,15 @@ def _apply_schema(engine):
         "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS location VARCHAR(255)",
         "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS trusted BOOLEAN NOT NULL DEFAULT FALSE",
         "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS trusted_at TIMESTAMP",
+        # ── Passkeys ──
+        """CREATE TABLE IF NOT EXISTS passkeys (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+            pin_hash VARCHAR(64) NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            last_used_at TIMESTAMP)""",
+        "CREATE INDEX IF NOT EXISTS idx_passkey_user ON passkeys(user_id)",
     ]
     with engine.begin() as conn:
         for s in stmts:
@@ -126,8 +140,23 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="SyncVeil API", lifespan=lifespan)
 
-origins = list({o.rstrip("/") for o in settings.cors_origins_list if o != "*"} | ({settings.FRONTEND_URL.rstrip("/")} if settings.FRONTEND_URL else set()) - {""})
-app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+# Build CORS origins list — combine CORS_ORIGINS env var + FRONTEND_URL
+if settings.CORS_ORIGINS == "*":
+    origins = ["*"]
+else:
+    _origin_set = {o.rstrip("/") for o in settings.cors_origins_list if o.strip() and o != "*"}
+    if settings.FRONTEND_URL:
+        _origin_set.add(settings.FRONTEND_URL.rstrip("/"))
+    _origin_set.discard("")
+    origins = list(_origin_set) if _origin_set else ["*"]  # fallback: allow all
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["X-Vault-SHA256", "X-Vault-Version"],
+)
 
 @app.get("/health")
 def health(): return {"status": "ok"}
@@ -136,3 +165,4 @@ app.include_router(auth_router, prefix="/auth")
 app.include_router(dashboard_router)
 app.include_router(vault_router)
 app.include_router(twofa_router)
+app.include_router(passkey_router)
