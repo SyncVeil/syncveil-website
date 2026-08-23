@@ -1,1 +1,0 @@
-"""SyncVeil Backend Application"""

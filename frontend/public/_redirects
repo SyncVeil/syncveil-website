@@ -1,4 +1,0 @@
-# SPA routing — all paths serve index.html so React Router handles them
-/oauth/*   /index.html  200
-/verify-email  /index.html  200
-/*         /index.html  200

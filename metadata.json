@@ -1,0 +1,6 @@
+{
+  "name": "SyncVeil",
+  "description": "Privacy-first encrypted data protection and identity management platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
