@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy – SyncVeil</title>
+    <meta name="description" content="Privacy Policy for SyncVeil explaining how user data is collected, stored, and protected.">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/shield.svg" type="image/svg+xml">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --nav-height: 72px; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: white;
+            color: #0f172a;
+        }
+
+        .org-name {
+            font-family: 'Rubik Mono One', monospace;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            line-height: 1;
+        }
+
+        /* Animations */
+        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-white text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+
+    <!-- NAVBAR -->
+    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16 md:h-20">
+                <!-- Logo -->
+                <a href="app.html" class="flex items-center gap-2 cursor-pointer group no-underline">
+                    <span class="text-2xl md:text-3xl org-name text-slate-800">
+                        SyncVeil
+                    </span>
+                </a>
+
+                <!-- Desktop Links -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="app.html" class="text-slate-600 hover:text-indigo-600 font-medium transition-colors text-sm">Home</a>
+                    <a href="index.html#features" class="text-slate-600 hover:text-indigo-600 font-medium transition-colors text-sm">Product</a>
+                    <a href="index.html#news-section" class="text-slate-600 hover:text-indigo-600 font-medium transition-colors text-sm">Breach News</a>
+                    <a href="app.html" class="bg-slate-900 text-white px-5 py-2 rounded-full font-medium hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-0.5 text-sm">
+                        Open App
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Icon (Placeholder for consistency) -->
+                <button class="md:hidden text-slate-700 p-2 hover:bg-slate-100 rounded-lg transition-colors" aria-label="Open menu">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 pt-32 pb-20">
+        <div class="max-w-3xl mx-auto px-6 animate-fade-in-up">
+            <!-- Breadcrumb / Back Link -->
+            <a href="app.html" class="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-medium mb-8 transition-colors">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Home
+            </a>
+
+            <!-- Header -->
+            <div class="mb-10 border-b border-slate-100 pb-10">
+                <span class="text-indigo-600 font-bold tracking-wider uppercase text-xs mb-2 block">Legal Documentation</span>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">Privacy Policy</h1>
+                <p class="text-lg text-slate-600 leading-relaxed">
+                    SyncVeil is committed to protecting your privacy. We collect only the data necessary to provide secure services.
+                </p>
+            </div>
+
+            <!-- Content Area -->
+            <div class="prose prose-slate prose-lg max-w-none text-slate-600">
+                <h3 class="text-xl font-bold text-slate-900 mb-4">1. Information We Collect</h3>
+                <p class="mb-6 leading-relaxed">
+                    We believe in data minimization. We only collect information that is strictly necessary to provide our services. The types of personal information we collect include:
+                </p>
+                
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-teal-500 mt-1 shrink-0"></i>
+                        <span><strong>Account Information:</strong> When you register, we collect your email address. This is used solely for authentication, account recovery, and critical security alerts. We do not require your real name or physical address.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-teal-500 mt-1 shrink-0"></i>
+                        <span><strong>Encrypted Content:</strong> Files you upload to the SyncVeil Vault are encrypted on your device (client-side encryption) before they are transmitted to our servers. We store the encrypted binary data but do not possess the decryption keys required to view the content.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-teal-500 mt-1 shrink-0"></i>
+                        <span><strong>Usage Logs:</strong> We maintain minimal access logs, including IP addresses and timestamps of login attempts. These logs are retained for 30 days solely to detect anomalous behavior and prevent brute-force attacks.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-teal-500 mt-1 shrink-0"></i>
+                        <span><strong>Payment Information:</strong> If you subscribe to a paid plan, payment processing is handled by our third-party provider (Stripe). SyncVeil does not store full credit card numbers or banking details.</span>
+                    </li>
+                </ul>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">2. Zero-Knowledge Architecture</h3>
+                <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 mb-8">
+                    <h4 class="font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                        <i data-lucide="shield" class="w-5 h-5"></i> What We Cannot See
+                    </h4>
+                    <p class="text-indigo-800 text-sm leading-relaxed">
+                        We define our service by what we <em>cannot</em> see. Your password derives the encryption key for your data locally on your device. SyncVeil employees, contractors, and infrastructure providers cannot access your stored files, even if legally compelled, because we mathematically cannot decrypt them without your private key.
+                    </p>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">3. How We Use Your Information</h3>
+                <p class="mb-4 leading-relaxed">
+                    We use the collected information for the following specific purposes:
+                </p>
+                <ul class="list-disc pl-5 space-y-2 mb-8 text-base">
+                    <li>To provide, operate, and maintain the SyncVeil platform.</li>
+                    <li>To improve, personalize, and expand our services based on aggregate, non-identifiable usage patterns.</li>
+                    <li>To communicate with you regarding updates, security alerts, and administrative messages.</li>
+                    <li>To prevent fraudulent activity and ensure the security of our infrastructure.</li>
+                </ul>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">4. Data Retention</h3>
+                <p class="mb-8 leading-relaxed">
+                    We retain your personal information only for as long as is necessary for the purposes set out in this Privacy Policy. We will retain and use your information to the extent necessary to comply with our legal obligations (for example, if we are required to retain your data to comply with applicable laws), resolve disputes, and enforce our legal agreements and policies.
+                </p>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">5. Third-Party Sharing</h3>
+                <p class="mb-8 leading-relaxed">
+                    We do not sell, trade, or otherwise transfer your personally identifiable information to outside parties for marketing purposes. We use trusted third-party infrastructure providers (such as AWS and Google Cloud) solely for hosting encrypted data blobs and running our application logic. These providers adhere to strict security certifications (SOC 2, ISO 27001).
+                </p>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">6. Your Data Protection Rights</h3>
+                <p class="mb-4 leading-relaxed">
+                    Depending on your location, you may have the following rights regarding your personal data:
+                </p>
+                <ul class="list-disc pl-5 space-y-2 mb-8 text-base">
+                    <li><strong>The right to access:</strong> You have the right to request copies of your personal data.</li>
+                    <li><strong>The right to rectification:</strong> You have the right to request that we correct any information you believe is inaccurate.</li>
+                    <li><strong>The right to erasure:</strong> You have the right to request that we erase your personal data, under certain conditions.</li>
+                    <li><strong>The right to data portability:</strong> You have the right to request that we transfer the data that we have collected to another organization, or directly to you.</li>
+                </ul>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">7. Contact Us</h3>
+                <p class="mb-6 leading-relaxed">
+                    If you have any questions about this Privacy Policy, please contact us:
+                </p>
+                <div class="flex items-center gap-2 text-indigo-600 font-bold">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
+                    <a href="mailto:privacy@syncveil.com" class="hover:underline">privacy@syncveil.com</a>
+                </div>
+
+                <p class="text-sm text-slate-500 mt-10 pt-10 border-t border-slate-100">
+                    Last updated: October 25, 2025
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t mt-20">
+        <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-sm text-slate-600">
+            <div>© 2025 SyncVeil Inc.</div>
+            <nav class="flex flex-wrap gap-4">
+                <a href="./privacy-policy.html" class="hover:text-indigo-600">Privacy Policy</a>
+                <a href="./terms-of-service.html" class="hover:text-indigo-600">Terms of Service</a>
+                <a href="./cookie-policy.html" class="hover:text-indigo-600">Cookie Policy</a>
+                <a href="./app.html" class="hover:text-indigo-600">Open App</a>
+                <a href="./app.html" class="hover:text-indigo-600">Home</a>
+            </nav>
+        </div>
+    </footer>
+
+    <!-- Initialize Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

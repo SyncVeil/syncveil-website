@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Terms of Service – SyncVeil</title>
+    <meta name="description" content="Terms of Service for SyncVeil outlining acceptable use, user responsibilities, and liability limitations.">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/shield.svg" type="image/svg+xml">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --nav-height: 72px; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: white;
+            color: #0f172a;
+        }
+
+        .org-name {
+            font-family: 'Rubik Mono One', monospace;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            line-height: 1;
+        }
+
+        /* Animations */
+        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-white text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+
+    <!-- NAVBAR -->
+    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16 md:h-20">
+                <!-- Logo -->
+                <a href="app.html" class="flex items-center gap-2 cursor-pointer group no-underline">
+                    <span class="text-2xl md:text-3xl org-name text-slate-800">
+                        SyncVeil
+                    </span>
+                </a>
+
+                <!-- Desktop Links -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="app.html" class="text-slate-600 hover:text-indigo-600 font-medium transition-colors text-sm">Home</a>
+                    <a href="index.html#features" class="text-slate-600 hover:text-indigo-600 font-medium transition-colors text-sm">Product</a>
+                    <a href="index.html#news-section" class="text-slate-600 hover:text-indigo-600 font-medium transition-colors text-sm">Breach News</a>
+                    <a href="app.html" class="bg-slate-900 text-white px-5 py-2 rounded-full font-medium hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-0.5 text-sm">
+                        Open App
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Icon (Placeholder for consistency) -->
+                <button class="md:hidden text-slate-700 p-2 hover:bg-slate-100 rounded-lg transition-colors" aria-label="Open menu">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 pt-32 pb-20">
+        <div class="max-w-3xl mx-auto px-6 animate-fade-in-up">
+            <!-- Breadcrumb / Back Link -->
+            <a href="app.html" class="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-medium mb-8 transition-colors">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Home
+            </a>
+
+            <!-- Header -->
+            <div class="mb-10 border-b border-slate-100 pb-10">
+                <span class="text-indigo-600 font-bold tracking-wider uppercase text-xs mb-2 block">Legal Documentation</span>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">Terms of Service</h1>
+                <p class="text-lg text-slate-600 leading-relaxed">
+                    Please read these terms carefully. By using SyncVeil, you agree to these conditions regarding the use of our platform and security mechanisms.
+                </p>
+            </div>
+
+            <!-- Content Area -->
+            <div class="prose prose-slate prose-lg max-w-none text-slate-600">
+                <h3 class="text-xl font-bold text-slate-900 mb-4">1. Acceptance of Terms</h3>
+                <p class="mb-6 leading-relaxed">
+                    By accessing or using the SyncVeil platform, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using or accessing this site.
+                </p>
+                
+                <h3 class="text-xl font-bold text-slate-900 mb-4">2. User Account & Security</h3>
+                <p class="mb-4 leading-relaxed">
+                    You are responsible for maintaining the confidentiality of your account credentials. Because SyncVeil uses a <strong>zero-knowledge encryption model</strong>:
+                </p>
+                <div class="bg-rose-50 border border-rose-100 rounded-2xl p-6 mb-8">
+                    <h4 class="font-bold text-rose-900 mb-2 flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i> Critical Notice
+                    </h4>
+                    <p class="text-rose-800 text-sm leading-relaxed">
+                        We <strong>cannot</strong> recover lost passwords or decrypt your data if you lose your credentials. You are solely responsible for safeguarding your master password and recovery keys.
+                    </p>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">3. Acceptable Use</h3>
+                <p class="mb-4 leading-relaxed">
+                    You agree not to misuse the SyncVeil platform. Prohibited actions include, but are not limited to:
+                </p>
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="x-circle" class="w-5 h-5 text-rose-500 mt-1 shrink-0"></i>
+                        <span>Attempting to bypass, disable, or defeat any security features or encryption mechanisms.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="x-circle" class="w-5 h-5 text-rose-500 mt-1 shrink-0"></i>
+                        <span>Using the service to store illegal content, malware, or materials that violate intellectual property rights.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="x-circle" class="w-5 h-5 text-rose-500 mt-1 shrink-0"></i>
+                        <span>Reverse engineering the platform's source code or APIs.</span>
+                    </li>
+                </ul>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">4. Intellectual Property</h3>
+                <p class="mb-6 leading-relaxed">
+                    The SyncVeil platform, including its code, design, and logos, is the property of SyncVeil Inc. You retain full ownership of the data and files you upload to your encrypted vault.
+                </p>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">5. Limitation of Liability</h3>
+                <p class="mb-6 leading-relaxed">
+                    SyncVeil is provided "as is". In no event shall SyncVeil Inc. be liable for any damages (including, without limitation, damages for loss of data or profit) arising out of the use or inability to use the materials on SyncVeil's website, even if SyncVeil has been notified of the possibility of such damage.
+                </p>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">6. Governing Law</h3>
+                <p class="mb-6 leading-relaxed">
+                    These terms and conditions are governed by and construed in accordance with the laws of Delaware, USA, and you irrevocably submit to the exclusive jurisdiction of the courts in that State or location.
+                </p>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">7. Contact Us</h3>
+                <p class="mb-6 leading-relaxed">
+                    If you have any questions regarding these Terms, please contact us:
+                </p>
+                <div class="flex items-center gap-2 text-indigo-600 font-bold mb-8">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
+                    <a href="mailto:legal@syncveil.com" class="hover:underline">legal@syncveil.com</a>
+                </div>
+
+                <p class="text-sm text-slate-500 mt-10 pt-10 border-t border-slate-100">
+                    Last updated: October 25, 2025
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t mt-20">
+        <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-sm text-slate-600">
+            <div>© 2025 SyncVeil Inc.</div>
+            <nav class="flex flex-wrap gap-4">
+                <a href="./privacy-policy.html" class="hover:text-indigo-600">Privacy Policy</a>
+                <a href="./terms-of-service.html" class="hover:text-indigo-600">Terms of Service</a>
+                <a href="./cookie-policy.html" class="hover:text-indigo-600">Cookie Policy</a>
+                <a href="./app.html" class="hover:text-indigo-600">Open App</a>
+                <a href="./app.html" class="hover:text-indigo-600">Home</a>
+            </nav>
+        </div>
+    </footer>
+
+    <!-- Initialize Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

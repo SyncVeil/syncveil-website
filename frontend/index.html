@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ================= SEO CORE ================= -->
+  <title>SyncVeil – Privacy & Encrypted Data Protection Platform</title>
+  <meta name="description" content="SyncVeil is a privacy-first platform offering encrypted data vaults, secure identity management, and real-time breach monitoring.">
+  <meta name="keywords" content="SyncVeil, Sycveil, Sync Veil, data privacy, encrypted vault, secure storage, breach monitoring, identity protection">
+  <meta name="author" content="SyncVeil">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <link rel="canonical" href="https://syncveil.software/">
+
+  <!-- ================= OPEN GRAPH ================= -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SyncVeil – Privacy That Empowers">
+  <meta property="og:description" content="Encrypted data vaults, identity protection, and breach monitoring.">
+  <meta property="og:url" content="https://syncveil.software/">
+  <meta property="og:site_name" content="SyncVeil">
+
+  <!-- ================= TWITTER ================= -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SyncVeil – Privacy That Empowers">
+  <meta name="twitter:description" content="Privacy-first encrypted data protection platform.">
+
+  <!-- ================= FAVICON ================= -->
+  <link rel="icon" href="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/shield.svg" type="image/svg+xml">
+
+  <!-- ================= FONTS ================= -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap" rel="stylesheet">
+
+  <!-- ================= TAILWIND ================= -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- ================= SCHEMA: ORGANIZATION ================= -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "SyncVeil",
+    "alternateName": ["Sycveil", "Sync Veil"],
+    "url": "https://syncveil.software/",
+    "logo": "https://syncveil.software/logo.png",
+    "description": "Privacy-first encrypted data protection and identity management platform.",
+    "foundingDate": "2025",
+    "sameAs": [
+      "https://github.com/SyncVeil",
+      "https://www.linkedin.com/company/syncveil"
+    ]
+  }
+  </script>
+
+  <!-- ================= SCHEMA: WEBSITE (BRAND SEARCH) ================= -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "SyncVeil",
+    "url": "https://syncveil.software/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://syncveil.software/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <!-- ================= SCHEMA: BREADCRUMB ================= -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [{
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://syncveil.software/"
+    }]
+  }
+  </script>
+
+  <style>
+    .org-name {
+      font-family: 'Rubik Mono One', cursive;
+    }
+    
+    :root {
+      --nav-height: 72px;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: white;
+      color: #0f172a;
+    }
+
+    main#main-content {
+      flex: 1;
+    }
+
+    .view-section {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+      min-height: calc(100vh - var(--nav-height));
+      box-sizing: border-box;
+    }
+
+    .view-section.active {
+      display: block;
+      opacity: 1;
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    .dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+      background-color: #f8fafc;
+    }
+
+    .dashboard-sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: white;
+      border-right: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+      z-index: 40;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .dashboard-main {
+      flex: 1;
+      position: relative;
+      overflow-y: auto;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes float-delayed {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .animate-float {
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .animate-float-delayed {
+      animation: float-delayed 7s ease-in-out infinite 2s;
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.8s ease-out forwards;
+    }
+
+    .animate-fade-in-right {
+      animation: fadeInRight 0.8s ease-out forwards;
+    }
+
+    .bar-h-40 { height: 40%; }
+    .bar-h-45 { height: 45%; }
+    .bar-h-50 { height: 50%; }
+    .bar-h-60 { height: 60%; }
+    .bar-h-70 { height: 70%; }
+    .bar-h-80 { height: 80%; }
+    .bar-h-90 { height: 90%; }
+
+    .jvm-tooltip {
+      background-color: #0f172a;
+      border: 1px solid #334155;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    #breach-map {
+      width: 100%;
+      height: auto;
+      background: transparent;
+      min-height: 400px;
+      max-height: 700px;
+    }
+
+    .map-gradient-overlay {
+      background: linear-gradient(to top, #f8fafc 10%, transparent 100%);
+      pointer-events: none;
+    }
+
+    #mobile-menu {
+      transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+    }
+
+    #mobile-menu.open {
+      max-height: 400px;
+      opacity: 1;
+    }
+
+    .view-center {
+      display: flex !important;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+
+    .drop-zone {
+      transition: all 0.2s ease;
+    }
+
+    .drop-zone.dragover {
+      border-color: #4f46e5;
+      background-color: #eef2ff;
+    }
+
+    .dash-tab {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .dash-tab.active {
+      display: block;
+      opacity: 1;
+    }
+
+    .dash-nav-btn {
+      transition: all 0.2s ease;
+    }
+
+    .progress-bar {
+      transition: width 1.5s ease-in-out;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 260px;
+        height: 100vh;
+        transform: translateX(-100%);
+        z-index: 50;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .dashboard-sidebar:not(.hidden) {
+        transform: translateX(0);
+      }
+
+      .dashboard-main {
+        width: 100%;
+      }
+
+      #breach-map {
+        min-height: 300px;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-white text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden">
+  <div id="root"></div>
+  <script type="module" src="/src/index.jsx"></script>
+</body>
+
+</html>

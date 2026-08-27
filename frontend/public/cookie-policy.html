@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cookie Policy – SyncVeil</title>
+    <meta name="description" content="Cookie Policy for SyncVeil explaining how we use cookies for authentication, security, and analytics.">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/icons/shield.svg" type="image/svg+xml">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --nav-height: 72px; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: white;
+            color: #0f172a;
+        }
+
+        .org-name {
+            font-family: 'Rubik Mono One', monospace;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            line-height: 1;
+        }
+
+        /* Animations */
+        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-white text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+
+    <!-- NAVBAR -->
+    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16 md:h-20">
+                <!-- Logo -->
+                <a href="app.html" class="flex items-center gap-2 cursor-pointer group no-underline">
+                    <span class="text-2xl md:text-3xl org-name text-slate-800">
+                        SyncVeil
+                    </span>
+                </a>
+
+                <!-- Desktop Links -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="app.html" class="text-slate-600 hover:text-indigo-600 font-medium transition-colors text-sm">Home</a>
+                    <a href="index.html#features" class="text-slate-600 hover:text-indigo-600 font-medium transition-colors text-sm">Product</a>
+                    <a href="index.html#news-section" class="text-slate-600 hover:text-indigo-600 font-medium transition-colors text-sm">Breach News</a>
+                    <a href="app.html" class="bg-slate-900 text-white px-5 py-2 rounded-full font-medium hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-0.5 text-sm">
+                        Open App
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Icon (Placeholder for consistency) -->
+                <button class="md:hidden text-slate-700 p-2 hover:bg-slate-100 rounded-lg transition-colors" aria-label="Open menu">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 pt-32 pb-20">
+        <div class="max-w-3xl mx-auto px-6 animate-fade-in-up">
+            <!-- Breadcrumb / Back Link -->
+            <a href="app.html" class="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-medium mb-8 transition-colors">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Home
+            </a>
+
+            <!-- Header -->
+            <div class="mb-10 border-b border-slate-100 pb-10">
+                <span class="text-indigo-600 font-bold tracking-wider uppercase text-xs mb-2 block">Legal Documentation</span>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">Cookie Policy</h1>
+                <p class="text-lg text-slate-600 leading-relaxed">
+                    Transparency is key. SyncVeil uses minimal cookies required solely for authentication, security, and essential analytics.
+                </p>
+            </div>
+
+            <!-- Content Area -->
+            <div class="prose prose-slate prose-lg max-w-none text-slate-600">
+                <h3 class="text-xl font-bold text-slate-900 mb-4">1. What Are Cookies?</h3>
+                <p class="mb-6 leading-relaxed">
+                    Cookies are small text files that are placed on your computer or mobile device when you visit a website. They are widely used to make websites work more efficiently and to provide information to the owners of the site. They allow a website to recognize your device and remember if you have been to the website before.
+                </p>
+                <p class="mb-6 leading-relaxed">
+                    Cookies can be "Persistent" or "Session" cookies. <strong>Persistent cookies</strong> remain on your personal computer or mobile device when you go offline, while <strong>Session cookies</strong> are deleted as soon as you close your web browser.
+                </p>
+                
+                <h3 class="text-xl font-bold text-slate-900 mb-4">2. Categories of Cookies We Use</h3>
+                <p class="mb-4 leading-relaxed">
+                    We use both session and persistent cookies for the purposes set out below:
+                </p>
+
+                <div class="space-y-6 mb-8">
+                    <!-- Category 1 -->
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-indigo-600 mt-0.5 shrink-0"></i>
+                            <div>
+                                <h4 class="text-base font-bold text-slate-900 mb-1">Strictly Necessary Cookies</h4>
+                                <p class="text-sm text-slate-600 mb-2">These cookies are essential for you to browse the website and use its features, such as accessing secure areas of the site. Without these cookies, services like the SyncVeil Vault cannot be provided.</p>
+                                <ul class="list-disc pl-4 text-sm text-slate-500 space-y-1">
+                                    <li><strong>AuthToken:</strong> Keeps you logged in securely.</li>
+                                    <li><strong>CSRF-Token:</strong> Protects against Cross-Site Request Forgery attacks.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category 2 -->
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="settings" class="w-6 h-6 text-teal-600 mt-0.5 shrink-0"></i>
+                            <div>
+                                <h4 class="text-base font-bold text-slate-900 mb-1">Functionality Cookies</h4>
+                                <p class="text-sm text-slate-600 mb-2">These allow our website to remember choices you make (such as your user name, language or the region you are in) and provide enhanced, more personal features.</p>
+                                <ul class="list-disc pl-4 text-sm text-slate-500 space-y-1">
+                                    <li><strong>ThemePref:</strong> Remembers if you prefer dark or light mode.</li>
+                                    <li><strong>Language:</strong> Stores your preferred interface language.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category 3 -->
+                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="bar-chart-2" class="w-6 h-6 text-blue-600 mt-0.5 shrink-0"></i>
+                            <div>
+                                <h4 class="text-base font-bold text-slate-900 mb-1">Performance & Analytics</h4>
+                                <p class="text-sm text-slate-600">We use minimal, privacy-focused analytics to understand how our users interact with the platform (e.g., page load times, error rates). We do <strong>not</strong> track individual user behavior across other websites or use this data for advertising.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">3. Third-Party Cookies</h3>
+                <p class="mb-4 leading-relaxed">
+                    In some special cases, we also use cookies provided by trusted third parties. The following section details which third party cookies you might encounter through this site:
+                </p>
+                <ul class="list-disc pl-5 space-y-2 mb-8 text-base">
+                    <li><strong>Payment Processing:</strong> If you use our premium features, our payment processor (e.g., Stripe) may set cookies to prevent fraud and ensure transaction security.</li>
+                    <li><strong>No Ad Networks:</strong> SyncVeil does not use third-party advertising cookies or share data with ad networks like Google Ads or Facebook Pixel.</li>
+                </ul>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">4. Your Choices Regarding Cookies</h3>
+                <p class="mb-6 leading-relaxed">
+                    If you prefer to avoid the use of cookies on the Website, first you must disable the use of cookies in your browser and then delete the cookies saved in your browser associated with this website. You may use this option for preventing the use of cookies at any time.
+                </p>
+                <p class="mb-6 leading-relaxed">
+                    If you do not accept our cookies, you may experience some inconvenience in your use of the Website and some features (like the encrypted vault) may not function properly.
+                </p>
+                <ul class="space-y-2 text-sm text-indigo-600 font-medium">
+                    <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener" class="hover:underline flex items-center gap-1">Chrome Guide <i data-lucide="external-link" class="w-3 h-3"></i></a></li>
+                    <li><a href="https://support.apple.com/en-gb/guide/safari/sfri11471/mac" target="_blank" rel="noopener" class="hover:underline flex items-center gap-1">Safari Guide <i data-lucide="external-link" class="w-3 h-3"></i></a></li>
+                    <li><a href="https://support.mozilla.org/en-US/kb/enable-and-disable-cookies-website-preferences" target="_blank" rel="noopener" class="hover:underline flex items-center gap-1">Firefox Guide <i data-lucide="external-link" class="w-3 h-3"></i></a></li>
+                </ul>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4 mt-8">5. Contact Us</h3>
+                <p class="mb-6 leading-relaxed">
+                    If you have any questions about this Cookie Policy, you can contact us:
+                </p>
+                <div class="flex items-center gap-2 text-indigo-600 font-bold mb-8">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
+                    <a href="mailto:privacy@syncveil.com" class="hover:underline">privacy@syncveil.com</a>
+                </div>
+
+                <p class="text-sm text-slate-500 mt-10 pt-10 border-t border-slate-100">
+                    Last updated: October 25, 2025
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t mt-20">
+        <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-sm text-slate-600">
+            <div>© 2025 SyncVeil Inc.</div>
+            <nav class="flex flex-wrap gap-4">
+                <a href="./privacy-policy.html" class="hover:text-indigo-600">Privacy Policy</a>
+                <a href="./terms-of-service.html" class="hover:text-indigo-600">Terms of Service</a>
+                <a href="./cookie-policy.html" class="hover:text-indigo-600">Cookie Policy</a>
+                <a href="./app.html" class="hover:text-indigo-600">Open App</a>
+                <a href="./app.html" class="hover:text-indigo-600">Home</a>
+            </nav>
+        </div>
+    </footer>
+
+    <!-- Initialize Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
